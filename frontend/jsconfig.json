@@ -6,5 +6,5 @@
     },
     "include": [
       "src/**/*"
-    ],
+, "update_database.js"    ],
   }

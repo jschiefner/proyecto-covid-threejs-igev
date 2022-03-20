@@ -1,0 +1,16 @@
+{
+  "development": {
+    "username": "jonas.schiefner",
+    "password": null,
+    "database": "proyecto-covid-igev-development",
+    "host": "127.0.0.1",
+    "dialect": "postgres"
+  },
+  "production": {
+    "username": "root",
+    "password": null,
+    "database": "proyecto-covid-igev-production",
+    "host": "127.0.0.1",
+    "dialect": "postgres"
+  }
+}
