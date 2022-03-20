@@ -4,8 +4,6 @@ import * as THREE from "three";
 import * as TWEEN from "@tweenjs/tween.js";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 
-let radius = 1;
-
 // for the screen size
 const sizes = {
   width: window.innerWidth,
@@ -23,10 +21,15 @@ onMounted(() => {
   renderer.setSize(sizes.width, sizes.height);
   // renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-  var camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 1, 2000);
+  var camera = new THREE.PerspectiveCamera(
+    75,
+    sizes.width / sizes.height,
+    1,
+    2000
+  );
   // camera.position.setScalar(1);
-  camera.position.z = 400
-  camera.position.y = 400
+  camera.position.z = 400;
+  camera.position.y = 400;
 
   var light = new THREE.DirectionalLight(0xffffff);
   light.position.set(1, 0, 0);
@@ -39,114 +42,107 @@ onMounted(() => {
   controls.enableDamping = true; // an animation loop is required when either damping or auto-rotation are enabled
   controls.dampingFactor = 0.05;
   controls.screenSpacePanning = true;
-  controls.zoomSpeed = 0.1
+  controls.zoomSpeed = 0.1;
 
-  var texLoader = new THREE.TextureLoader();
-  // var tex = texLoader.load("../src/assets/8081_earthmap10k.jpeg");
-  var material_map = texLoader.load("../src/assets/8081_earthmap10k.jpeg");
-  var radius = 300;
-  var segments = 128;
-  var rings = 128;
-  var geometry = new THREE.SphereGeometry(radius, segments, rings);
+  let texLoader = new THREE.TextureLoader();
+  let mapMaterial = texLoader.load("../src/assets/8081_earthmap10k.jpeg");
+  let earthRadius = 300;
+  let segments = 128;
+  let rings = 128;
+  let geometry = new THREE.SphereGeometry(earthRadius, segments, rings);
 
-  material_map.wrapS = THREE.RepeatWrapping;
-  material_map.wrapT = THREE.RepeatWrapping;
-  // material_map.repeat.set(8, 8);
+  mapMaterial.wrapS = THREE.RepeatWrapping;
+  mapMaterial.wrapT = THREE.RepeatWrapping;
   let material = new THREE.MeshPhongMaterial({
-      map: material_map,
-      color: 0x3366aa
+    map: mapMaterial,
+    color: 0x3366aa,
   });
   let mesh = new THREE.Mesh(geometry, material);
   scene.add(mesh);
 
+  const fileLoader = new THREE.FileLoader();
+  fileLoader.load(
+    "../src/assets/NUTS_RG_60M_2021_4326_lvl1.geojson",
+    (json) => {
+      const data = JSON.parse(json);
+      addAllRegions(data);
+    }
+  );
 
-  const fileLoader = new THREE.FileLoader()
-  fileLoader.load('../src/assets/NUTS_RG_60M_2021_4326_lvl1.geojson', (json) => {
-    const data = JSON.parse(json)
-    add_all_regions(data)
-  })
+  let extrusionAmount = 3;
 
-  let extrusion_amount = 1
-  let uniform_color = false
-  let uniform_height = false
+  function addRegion(shapePoints) {
+    let shape = new THREE.Shape(shapePoints);
+    let outerRadius = 305.0;
 
-  function add_region(shape_points) {
-      var shape = new THREE.Shape(shape_points);
-      var shape_geom;
-      var inner_radius = 300.0;
-      var outer_radius = 305.0;
+    let shapeGeometry = shape.extrude({
+      amount: outerRadius - earthRadius,
+      bevelEnabled: false,
+    });
 
-      shape_geom = shape.extrude({
-          amount: outer_radius - inner_radius,
-          bevelEnabled: false
-      });
+    let offset = Math.random() * extrusionAmount;
 
-      var offset = 0;
-      if ( ! uniform_height )
-            offset = Math.random() * extrusion_amount;
+    shapeGeometry.vertices.forEach(function (vert, index) {
+      let radius;
+      if (index < shapeGeometry.vertices.length / 2) {
+        radius = earthRadius;
+      } else {
+        radius = earthRadius + extrusionAmount + offset;
+      }
+      let phi = ((90.0 - vert.y) * Math.PI) / 180.0;
+      let theta = ((360.0 - vert.x) * Math.PI) / 180.0;
+      vert.x = radius * Math.sin(phi) * Math.cos(theta);
+      vert.y = radius * Math.cos(phi);
+      vert.z = radius * Math.sin(phi) * Math.sin(theta);
+    });
 
-      shape_geom.vertices.forEach(function (vert, index) {
-          var radius = 0.0;
-          if (index < shape_geom.vertices.length / 2) {
-              radius = inner_radius;
-          } else {
-              radius = inner_radius + extrusion_amount + offset;
-          }
-          var phi = (90.0 - vert.y) * Math.PI / 180.0;
-          var theta = (360.0 - vert.x) * Math.PI / 180.0;
-          vert.x = radius * Math.sin(phi) * Math.cos(theta);;
-          vert.y = radius * Math.cos(phi);;
-          vert.z = radius * Math.sin(phi) * Math.sin(theta);;
-      });
+    // TODO: set appropriate color
+    let color = new THREE.Color(0xaa9933);
+    color.setHSL(Math.random(), 0.8, 0.8);
 
-      var color = new THREE.Color(0xaa9933);
-      if (! uniform_color)
-          color.setHSL(Math.random(),0.8,0.8 );
-
-      var shape_material = new THREE.MeshPhongMaterial({
-          color: color,
-          side: THREE.DoubleSide
-      });
-      var shape_mesh = new THREE.Mesh(shape_geom, shape_material);
-      root_object.add(shape_mesh);
+    let shapeMaterial = new THREE.MeshPhongMaterial({
+      color: color,
+      side: THREE.DoubleSide,
+    });
+    let shapeMesh = new THREE.Mesh(shapeGeometry, shapeMaterial);
+    rootObject.add(shapeMesh);
   }
 
-  let root_object = null;
+  let rootObject = null;
 
-  function add_all_regions(data) {
+  function addAllRegions(data) {
+    if (rootObject) {
+      scene.remove(rootObject);
+    }
 
-      if ( root_object ) {
-          scene.remove(root_object);
-      }
+    rootObject = new THREE.Object3D();
+    scene.add(rootObject);
 
-      root_object = new THREE.Object3D();
-      scene.add(root_object);
-
-      data.features.forEach(function (country) {
-          if (country.geometry.coordinates.length === 1) {
-              var shape_points = [];
-              country.geometry.coordinates[0].forEach(function (points) {
-                  shape_points.push(new THREE.Vector2(points[0], points[1]));
-              });
-              add_region(shape_points);
+    data.features.forEach(function (country) {
+      if (country.geometry.coordinates.length === 1) {
+        let shapePoints = [];
+        country.geometry.coordinates[0].forEach(function (points) {
+          shapePoints.push(new THREE.Vector2(points[0], points[1]));
+        });
+        addRegion(shapePoints);
+      } else {
+        country.geometry.coordinates.forEach(function (coordSet) {
+          if (coordSet.length == 1) {
+            let shapePoints = [];
+            coordSet[0].forEach(function (points) {
+              shapePoints.push(new THREE.Vector2(points[0], points[1]));
+            });
+            addRegion(shapePoints);
           } else {
-              country.geometry.coordinates.forEach(function (coord_set) {
-                  if (coord_set.length == 1) {
-                      var shape_points = [];
-                      coord_set[0].forEach(function (points) {
-                          shape_points.push(new THREE.Vector2(points[0], points[1]));
-                      });
-                      add_region(shape_points);
-                  } else {
-                      var shape_points = [];
-                      coord_set.forEach(function (points) {
-                          shape_points.push(new THREE.Vector2(points[0], points[1]));
-                      });
-                      add_region(shape_points);
-                  }
-              });
+            let shapePoints = [];
+            coordSet.forEach(function (points) {
+              shapePoints.push(new THREE.Vector2(points[0], points[1]));
+            });
+            addRegion(shapePoints);
           }
-      });
+        });
+      }
+    });
   }
 
   window.addEventListener("resize", () => {
