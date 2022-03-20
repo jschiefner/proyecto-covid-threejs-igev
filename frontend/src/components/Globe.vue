@@ -6,17 +6,23 @@ import * as TWEEN from '@tweenjs/tween.js'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 
 onMounted(() => {
-  // @author prisoner849
+  const sizes = {
+    width: window.innerWidth,
+    height: window.innerHeight
+}
 
   var scene = new THREE.Scene();
   var camera = new THREE.PerspectiveCamera(60, 1, 1, 1000);
-  camera.position.setScalar(20);
+  camera.position.setScalar(700);
+  let canvas = document.querySelector('canvas.webgl');
   var renderer = new THREE.WebGLRenderer({
+    canvas: canvas,
     antialias: true
   });
   renderer.setClearColor(0x404040);
-  var canvas = renderer.domElement;
-  document.body.appendChild(canvas);
+  renderer.setSize(sizes.width, sizes.height)
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+
 
   var controls = new OrbitControls(camera, renderer.domElement);
 
@@ -32,7 +38,7 @@ onMounted(() => {
   };
   console.log(parisSpherical);
 
-  var radius = 10;
+  var radius = 500;
 
   var parisVector = new THREE.Vector3().setFromSphericalCoords(
     radius,
@@ -50,41 +56,44 @@ onMounted(() => {
   scene.add(line);
 
   var texLoader = new THREE.TextureLoader();
-  var tex = texLoader.load(
-        "https://cywarr.github.io/small-shop/map-political1.gif"
-      );
+  var tex = texLoader.load("../src/assets/8081_earthmap10k.jpeg");
   var globe = new THREE.Mesh(
-    new THREE.SphereGeometry(radius, 18, 9),
+    new THREE.SphereGeometry(radius, 100, 100),
     new THREE.MeshBasicMaterial({
       map: tex,
       transparent: true,
-      opacity: 0.25
+      opacity: 0.50
     })
   );
   globe.rotation.y = -Math.PI * 0.5;
   scene.add(globe);
 
-  render();
+  camera.aspect = sizes.width / sizes.height
+  camera.updateProjectionMatrix()
 
-  function resize(renderer) {
-    const canvas = renderer.domElement;
-    const width = canvas.clientWidth;
-    const height = canvas.clientHeight;
-    const needResize = canvas.width !== width || canvas.height !== height;
-    if (needResize) {
-      renderer.setSize(width, height, false);
-    }
-    return needResize;
+  window.addEventListener('resize', () => {
+    // Update sizes
+    sizes.width = window.innerWidth
+    sizes.height = window.innerHeight
+
+    // Update camera
+    camera.aspect = sizes.width / sizes.height
+    camera.updateProjectionMatrix()
+
+    // Update renderer
+    renderer.setSize(sizes.width, sizes.height)
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+  })
+
+  const tick = () => {
+    // Render
+    renderer.render(scene, camera)
+
+    // Call tick again on the next frame
+    window.requestAnimationFrame(tick)
   }
 
-  function render() {
-    if (resize(renderer)) {
-      camera.aspect = canvas.clientWidth / canvas.clientHeight;
-      camera.updateProjectionMatrix();
-    }
-    renderer.render(scene, camera);
-    requestAnimationFrame(render);
-  }
+  tick()
 })
 
 </script>
