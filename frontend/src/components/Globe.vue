@@ -6,186 +6,101 @@ import * as TWEEN from '@tweenjs/tween.js'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 
 onMounted(() => {
-    console.clear();
+  // @author prisoner849
 
-    var materialShader;
+  var scene = new THREE.Scene();
+  var camera = new THREE.PerspectiveCamera(60, 1, 1, 1000);
+  camera.position.setScalar(20);
+  var renderer = new THREE.WebGLRenderer({
+    antialias: true
+  });
+  renderer.setClearColor(0x404040);
+  var canvas = renderer.domElement;
+  document.body.appendChild(canvas);
 
-    const sizes = {
-        width: window.innerWidth,
-        height: window.innerHeight
-    }
+  var controls = new OrbitControls(camera, renderer.domElement);
 
-    var scene = new THREE.Scene();
-    var camera = new THREE.PerspectiveCamera(60, 1, 1, 1000);
-    camera.position.set(0, 0, 15);
+  var paris = {
+    lat: 48.864716,
+    lon: 2.349014
+  };
+  console.log(paris);
 
-    const canvas = document.querySelector('canvas.webgl')
-    var renderer = new THREE.WebGLRenderer({
-        antialias: true,
-        canvas: canvas,
-        alpha: true,
-    });
+  var parisSpherical = {
+    lat: THREE.Math.degToRad(90 - paris.lat),
+    lon: THREE.Math.degToRad(paris.lon)
+  };
+  console.log(parisSpherical);
 
-    /**
-     * Renderer
-     */
-    renderer.setSize(sizes.width, sizes.height)
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+  var radius = 10;
 
-    // Controls
-    const controls = new OrbitControls(camera, canvas);
-    controls.enableDamping = true; // an animation loop is required when either damping or auto-rotation are enabled
-    controls.dampingFactor = 0.25;
-    controls.screenSpacePanning = false;
-    controls.minDistance = 5;
-    controls.maxDistance = 10;
-    controls.maxPolarAngle = Math.PI / 2;
+  var parisVector = new THREE.Vector3().setFromSphericalCoords(
+    radius,
+    parisSpherical.lat,
+    parisSpherical.lon
+  );
+  // check we did it correctly
+  var spherical = new THREE.Spherical().setFromVector3(parisVector);
+  console.log(spherical);
+  ////////////////////////////
 
-    window.addEventListener('resize', () => {
-        // Update sizes
-        sizes.width = window.innerWidth
-        sizes.height = window.innerHeight
+  var lineGeom = new THREE.BufferGeometry();
+  lineGeom.setFromPoints([new THREE.Vector3(), parisVector])
+  var line = new THREE.Line(lineGeom, new THREE.LineBasicMaterial({ color: "yellow" }));
+  scene.add(line);
 
-        // Update camera
-        camera.aspect = sizes.width / sizes.height
-        camera.updateProjectionMatrix()
-
-        // Update renderer
-        renderer.setSize(sizes.width, sizes.height)
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+  var texLoader = new THREE.TextureLoader();
+  var tex = texLoader.load(
+        "https://cywarr.github.io/small-shop/map-political1.gif"
+      );
+  var globe = new THREE.Mesh(
+    new THREE.SphereGeometry(radius, 18, 9),
+    new THREE.MeshBasicMaterial({
+      map: tex,
+      transparent: true,
+      opacity: 0.25
     })
+  );
+  globe.rotation.y = -Math.PI * 0.5;
+  scene.add(globe);
 
-    var light = new THREE.DirectionalLight(0xffffff, 0.25);
-    light.position.setScalar(1);
-    scene.add(light);
-    scene.add(new THREE.AmbientLight(0xffffff, 0.75));
+  render();
 
-    var geom = new THREE.SphereBufferGeometry(5, 64, 36);
-    var material = new THREE.MeshStandardMaterial({
-      map: new THREE.TextureLoader().load('../src/assets/earth.jpeg')
-    });
-
-    var maxImpactAmount = 1;
-    // init uniforms impacts array
-    var impacts = [];
-    for (let i = 0; i < maxImpactAmount; i++) {
-      impacts.push({
-        impactPosition: new THREE.Vector3().setFromSphericalCoords(
-          geom.parameters.radius,
-          Math.PI * Math.random(),
-          Math.PI * 2 * Math.random()
-        ),
-        impactMaxRadius: geom.parameters.radius * THREE.Math.randFloat(0.5, 0.75),
-        impactRatio: 0.25
-      });
+  function resize(renderer) {
+    const canvas = renderer.domElement;
+    const width = canvas.clientWidth;
+    const height = canvas.clientHeight;
+    const needResize = canvas.width !== width || canvas.height !== height;
+    if (needResize) {
+      renderer.setSize(width, height, false);
     }
+    return needResize;
+  }
 
-    console.log(impacts);
-
-    material.onBeforeCompile = shader => {
-      shader.uniforms.impacts = { value: impacts };
-      shader.vertexShader = "varying vec3 vPosition;\n" + shader.vertexShader;
-      shader.vertexShader = shader.vertexShader.replace(
-        "#include <worldpos_vertex>",
-        `#include <worldpos_vertex>
-    vPosition = transformed.xyz;`
-      );
-      shader.fragmentShader =
-        `struct impact {
-        vec3 impactPosition;
-        float impactMaxRadius;
-        float impactRatio;
-      };
-     uniform impact impacts[${maxImpactAmount}];
-     varying vec3 vPosition;
-    ` + shader.fragmentShader;
-      shader.fragmentShader = shader.fragmentShader.replace(
-        "#include <dithering_fragment>",
-        `#include <dithering_fragment>
-      float finalStep = 0.0;
-      for (int i = 0; i < ${maxImpactAmount};i++){
-
-        float dist = distance(vPosition, impacts[i].impactPosition);
-        float curRadius = impacts[i].impactMaxRadius * impacts[i].impactRatio;
-        float sstep = smoothstep(0., curRadius, dist) - smoothstep(curRadius - ( 0.25 * impacts[i].impactRatio ), curRadius, dist);
-        sstep *= 1. - impacts[i].impactRatio;
-        finalStep += sstep;
-
-      }
-      finalStep = 1. - clamp(finalStep, 0., 1.);
-
-      vec3 col = mix(vec3(1., 0.5, 0.0625), vec3(1.,0.125, 0.0625), finalStep);
-      gl_FragColor = vec4( mix( col, gl_FragColor.rgb, finalStep), diffuseColor.a );`
-      );
-      materialShader = shader;
-      console.log(shader);
-    };
-
-    var globe = new THREE.Mesh(geom, material);
-    scene.add(globe);
-
-    var tweens = [];
-
-    for (let i = 0; i < maxImpactAmount; i++) {
-      tweens.push({
-        runTween: function () {
-          var tween = new TWEEN.Tween({ value: 0 })
-            .to({ value: 1 }, THREE.Math.randInt(2500, 5000))
-            //.delay(THREE.Math.randInt(500, 2000))
-            .onUpdate(val => {
-              if (materialShader)
-                materialShader.uniforms.impacts.value[i].impactRatio = val.value;
-            })
-            .onComplete(val => {
-              if (materialShader) {
-                materialShader.uniforms.impacts.value[i].impactPosition.setFromSphericalCoords(
-                  geom.parameters.radius,
-                  Math.PI * Math.random(),
-                  Math.PI * 2 * Math.random()
-                );
-                materialShader.uniforms.impacts.value[i].impactMaxRadius = geom.parameters.radius * THREE.Math.randFloat(0.5, 0.75);
-              }
-              tweens[i].runTween();
-            });
-          tween.start();
-        }
-      });
+  function render() {
+    if (resize(renderer)) {
+      camera.aspect = canvas.clientWidth / canvas.clientHeight;
+      camera.updateProjectionMatrix();
     }
-
-    tweens.forEach(t => { t.runTween(); })
-
-    /**
-     * Render
-     */
-    const tick = () => {
-        // Render
-        renderer.render(scene, camera)
-
-        TWEEN.update();
-
-        // Call tick again on the next frame
-        window.requestAnimationFrame(tick)
-    }
-
-    tick()
+    renderer.render(scene, camera);
+    requestAnimationFrame(render);
+  }
 })
 
 </script>
 
 <template>
-    <canvas width="3008" height="1528" class="webgl"></canvas>
+    <canvas class="webgl"></canvas>
 </template>
 
 <style scoped>
-html, body {
-    height: 100%;
-    margin: 0;
-    overflow: hidden;
-}
-
-canvas {
-    width: 100%;
-    height: 100%;
-    display: block;
-}
+	html, body {
+	height: 100%;
+	margin: 0;
+	overflow: hidden;
+	}
+	canvas {
+	width: 100%;
+	height: 100%;
+	}
 </style>
