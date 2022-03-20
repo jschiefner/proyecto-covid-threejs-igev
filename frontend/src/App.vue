@@ -3,10 +3,11 @@
 // Check out https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup
 import HelloWorld from './components/HelloWorld.vue'
 import Car from './components/Car.vue'
+import Globe from './components/Globe.vue'
 </script>
 
 <template>
-  <Car />
+  <Globe />
 </template>
 
 <style>
