@@ -4,124 +4,7 @@ import * as THREE from "three";
 import * as TWEEN from "@tweenjs/tween.js";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 
-let radius = 500;
-
-var examplePolygon = [
-  [-7.032, 43.544],
-  [-5.854, 43.612],
-  [-4.512, 43.393],
-  [-3.374, 43.408],
-  [-3.153, 43.353],
-  [-2.786, 43.431],
-  [-2.459, 43.335],
-  [-2.123, 43.335],
-  [-1.893, 43.345],
-  [-1.786, 43.35],
-  [-1.769, 43.335],
-  [-1.729, 43.296],
-  [-1.439, 43.258],
-  [-0.725, 42.92],
-  [-0.313, 42.849],
-  [0.478, 42.7],
-  [0.66, 42.691],
-  [0.745, 42.749],
-  [0.858, 42.826],
-  [1.33, 42.7],
-  [1.443, 42.604],
-  [1.496, 42.474],
-  [1.726, 42.504],
-  [1.731, 42.492],
-  [3.175, 42.435],
-  [3.076, 41.95],
-  [2.779, 41.649],
-  [1.645, 41.196],
-  [0.93, 40.977],
-  [0.745, 40.775],
-  [0.515, 40.523],
-  [-0.188, 39.722],
-  [-0.296, 39.377],
-  [-0.038, 38.886],
-  [0.144, 38.706],
-  [-0.432, 38.378],
-  [-0.762, 37.847],
-  [-1.63, 37.375],
-  [-1.786, 37.181],
-  [-1.893, 37.046],
-  [-2.098, 36.791],
-  [-2.786, 36.764],
-  [-3.129, 36.751],
-  [-3.374, 36.746],
-  [-3.777, 36.738],
-  [-4.38, 36.699],
-  [-5.252, 36.311],
-  [-5.339, 36.152],
-  [-5.352, 36.153],
-  [-5.369, 36.155],
-  [-5.423, 36.167],
-  [-5.446, 36.071],
-  [-5.595, 36.015],
-  [-5.793, 36.082],
-  [-5.907, 36.176],
-  [-6.036, 36.192],
-  [-6.409, 36.671],
-  [-6.43, 36.737],
-  [-6.346, 36.799],
-  [-6.945, 37.159],
-  [-7.402, 37.175],
-  [-7.513, 37.526],
-  [-7.446, 37.694],
-  [-6.932, 38.208],
-  [-7.108, 38.188],
-  [-7.276, 38.454],
-  [-7.203, 38.751],
-  [-7.021, 39.013],
-  [-7.231, 39.278],
-  [-7.543, 39.663],
-  [-7.011, 39.736],
-  [-6.951, 40.257],
-  [-6.865, 40.271],
-  [-6.802, 40.529],
-  [-6.93, 41.029],
-  [-6.69, 41.205],
-  [-6.48, 41.294],
-  [-6.301, 41.592],
-  [-6.637, 41.898],
-  [-6.986, 41.971],
-  [-7.2, 41.88],
-  [-8.052, 41.821],
-  [-8.165, 41.818],
-  [-8.199, 42.154],
-  [-8.863, 41.872],
-  [-8.786, 42.334],
-  [-8.727, 42.688],
-  [-8.962, 42.63],
-  [-9.209, 42.979],
-  [-9.134, 43.081],
-  [-8.99, 43.273],
-  [-8.629, 43.335],
-  [-8.324, 43.387],
-  [-7.7, 43.735],
-  [-7.601, 43.673],
-  [-7.032, 43.544],
-];
-
-examplePolygon = examplePolygon.map(([lon, lat]) => {
-  return { lat, lon };
-});
-
-// returns a vector that can be used on the sphere :^)
-function transformToSphericalVector({ lat, lon }) {
-  let spherical = {
-    lat: THREE.Math.degToRad(90 - lat),
-    lon: THREE.Math.degToRad(lon),
-  };
-
-  return new THREE.Vector3().setFromSphericalCoords(
-    radius,
-    spherical.lat,
-    spherical.lon
-  );
-}
+let radius = 1;
 
 // for the screen size
 const sizes = {
@@ -131,8 +14,6 @@ const sizes = {
 
 onMounted(() => {
   var scene = new THREE.Scene();
-  var camera = new THREE.PerspectiveCamera(60, 1, 1, 1000);
-  camera.position.setScalar(700);
   let canvas = document.querySelector("canvas.webgl");
   var renderer = new THREE.WebGLRenderer({
     canvas: canvas,
@@ -140,7 +21,19 @@ onMounted(() => {
   });
   renderer.setClearColor(0x404040);
   renderer.setSize(sizes.width, sizes.height);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  // renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+  var camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 1, 2000);
+  // camera.position.setScalar(1);
+  camera.position.z = 400
+  camera.position.y = 400
+
+  var light = new THREE.DirectionalLight(0xffffff);
+  light.position.set(1, 0, 0);
+  scene.add(light);
+  var light2 = new THREE.DirectionalLight(0xffffff);
+  light2.position.set(0, 0, 1);
+  scene.add(light2);
 
   var controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true; // an animation loop is required when either damping or auto-rotation are enabled
@@ -148,31 +41,113 @@ onMounted(() => {
   controls.screenSpacePanning = true;
   controls.zoomSpeed = 0.1
 
-  var lineGeom = new THREE.BufferGeometry();
-  lineGeom.setFromPoints(
-    examplePolygon.map((element) => transformToSphericalVector(element))
-  );
-  var line = new THREE.Line(
-    lineGeom,
-    new THREE.LineBasicMaterial({ color: "yellow" })
-  );
-  scene.add(line);
-
   var texLoader = new THREE.TextureLoader();
-  var tex = texLoader.load("../src/assets/8081_earthmap10k.jpeg");
-  var globe = new THREE.Mesh(
-    new THREE.SphereGeometry(radius, 100, 100),
-    new THREE.MeshBasicMaterial({
-      map: tex,
-      transparent: true,
-      opacity: 0.5,
-    })
-  );
-  globe.rotation.y = -Math.PI * 0.5;
-  scene.add(globe);
+  // var tex = texLoader.load("../src/assets/8081_earthmap10k.jpeg");
+  var material_map = texLoader.load("../src/assets/8081_earthmap10k.jpeg");
+  var radius = 300;
+  var segments = 128;
+  var rings = 128;
+  var geometry = new THREE.SphereGeometry(radius, segments, rings);
 
-  camera.aspect = sizes.width / sizes.height;
-  camera.updateProjectionMatrix();
+  material_map.wrapS = THREE.RepeatWrapping;
+  material_map.wrapT = THREE.RepeatWrapping;
+  // material_map.repeat.set(8, 8);
+  let material = new THREE.MeshPhongMaterial({
+      map: material_map,
+      color: 0x3366aa
+  });
+  let mesh = new THREE.Mesh(geometry, material);
+  scene.add(mesh);
+
+
+  const fileLoader = new THREE.FileLoader()
+  fileLoader.load('../src/assets/NUTS_RG_60M_2021_4326_lvl1.geojson', (json) => {
+    const data = JSON.parse(json)
+    add_all_regions(data)
+  })
+
+  let extrusion_amount = 1
+  let uniform_color = false
+  let uniform_height = false
+
+  function add_region(shape_points) {
+      var shape = new THREE.Shape(shape_points);
+      var shape_geom;
+      var inner_radius = 300.0;
+      var outer_radius = 305.0;
+
+      shape_geom = shape.extrude({
+          amount: outer_radius - inner_radius,
+          bevelEnabled: false
+      });
+
+      var offset = 0;
+      if ( ! uniform_height )
+            offset = Math.random() * extrusion_amount;
+
+      shape_geom.vertices.forEach(function (vert, index) {
+          var radius = 0.0;
+          if (index < shape_geom.vertices.length / 2) {
+              radius = inner_radius;
+          } else {
+              radius = inner_radius + extrusion_amount + offset;
+          }
+          var phi = (90.0 - vert.y) * Math.PI / 180.0;
+          var theta = (360.0 - vert.x) * Math.PI / 180.0;
+          vert.x = radius * Math.sin(phi) * Math.cos(theta);;
+          vert.y = radius * Math.cos(phi);;
+          vert.z = radius * Math.sin(phi) * Math.sin(theta);;
+      });
+
+      var color = new THREE.Color(0xaa9933);
+      if (! uniform_color)
+          color.setHSL(Math.random(),0.8,0.8 );
+
+      var shape_material = new THREE.MeshPhongMaterial({
+          color: color,
+          side: THREE.DoubleSide
+      });
+      var shape_mesh = new THREE.Mesh(shape_geom, shape_material);
+      root_object.add(shape_mesh);
+  }
+
+  let root_object = null;
+
+  function add_all_regions(data) {
+
+      if ( root_object ) {
+          scene.remove(root_object);
+      }
+
+      root_object = new THREE.Object3D();
+      scene.add(root_object);
+
+      data.features.forEach(function (country) {
+          if (country.geometry.coordinates.length === 1) {
+              var shape_points = [];
+              country.geometry.coordinates[0].forEach(function (points) {
+                  shape_points.push(new THREE.Vector2(points[0], points[1]));
+              });
+              add_region(shape_points);
+          } else {
+              country.geometry.coordinates.forEach(function (coord_set) {
+                  if (coord_set.length == 1) {
+                      var shape_points = [];
+                      coord_set[0].forEach(function (points) {
+                          shape_points.push(new THREE.Vector2(points[0], points[1]));
+                      });
+                      add_region(shape_points);
+                  } else {
+                      var shape_points = [];
+                      coord_set.forEach(function (points) {
+                          shape_points.push(new THREE.Vector2(points[0], points[1]));
+                      });
+                      add_region(shape_points);
+                  }
+              });
+          }
+      });
+  }
 
   window.addEventListener("resize", () => {
     // Update sizes
@@ -185,7 +160,7 @@ onMounted(() => {
 
     // Update renderer
     renderer.setSize(sizes.width, sizes.height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    // renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   });
 
   const tick = () => {
