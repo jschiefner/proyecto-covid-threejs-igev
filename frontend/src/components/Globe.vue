@@ -46,15 +46,20 @@ var camera = new THREE.PerspectiveCamera(
 );
 camera.position.set(370, 370, -15);
 
-// Create and init point lights
-var light = new THREE.DirectionalLight(0xffffff);
-light.position.set(camera.position.x, camera.position.y, +camera.position.z);
-light.layers.set(worldLayer, objectLayer);
-scene.add(light);
-var light2 = new THREE.DirectionalLight(0xffffff);
-light2.position.set(0, 0, 1);
-light2.layers.set(objectLayer);
-scene.add(light2);
+// Create and init lights
+let worldLight = new THREE.DirectionalLight(0xffffff);
+worldLight.position.set(camera.position.x, camera.position.y, +camera.position.z);
+worldLight.layers.set(worldLayer, objectLayer);
+scene.add(worldLight);
+
+let objectLight = new THREE.DirectionalLight(0xffffff);
+objectLight.position.set(0, 0, 1);
+objectLight.layers.set(objectLayer);
+scene.add(objectLight);
+
+let ambientLight = new THREE.AmbientLight(0xffffff, 0.5)
+scene.add(ambientLight)
+
 
 // Create globe mesh
 let mapMaterial = texLoader.load("../src/assets/8081_earthmap10k.jpeg");
