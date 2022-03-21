@@ -1,13 +1,16 @@
 <script setup>
 import { onMounted } from "@vue/runtime-core";
 import * as THREE from "three";
-import * as TWEEN from "@tweenjs/tween.js";
+import * as dat from "dat.gui";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 
 // Create loaders and globally usable variables for data
 const fileLoader = new THREE.FileLoader();
 const texLoader = new THREE.TextureLoader();
 let geoData, covidData;
+
+const worldLayer = 0,
+  objectLayer = 1;
 
 // Create awaitable version of file loader
 function loadJsonFile(location) {
@@ -41,15 +44,16 @@ var camera = new THREE.PerspectiveCamera(
   1,
   2000
 );
-camera.position.z = 400;
-camera.position.y = 400;
+camera.position.set(370, 370, -15);
 
 // Create and init point lights
 var light = new THREE.DirectionalLight(0xffffff);
-light.position.set(1, 0, 0);
+light.position.set(camera.position.x, camera.position.y, +camera.position.z);
+light.layers.set(worldLayer, objectLayer);
 scene.add(light);
 var light2 = new THREE.DirectionalLight(0xffffff);
 light2.position.set(0, 0, 1);
+light2.layers.set(objectLayer);
 scene.add(light2);
 
 // Create globe mesh
@@ -58,7 +62,6 @@ let earthRadius = 300;
 let segments = 128;
 let rings = 128;
 let geometry = new THREE.SphereGeometry(earthRadius, segments, rings);
-
 mapMaterial.wrapS = THREE.RepeatWrapping;
 mapMaterial.wrapT = THREE.RepeatWrapping;
 let material = new THREE.MeshPhongMaterial({
@@ -66,6 +69,7 @@ let material = new THREE.MeshPhongMaterial({
   color: 0x3366aa,
 });
 let mesh = new THREE.Mesh(geometry, material);
+mesh.layers.set(worldLayer);
 scene.add(mesh);
 
 // Variables for the extrusion object creation
@@ -113,6 +117,7 @@ function addRegion(shapePoints, covidDataWeek) {
     side: THREE.DoubleSide,
   });
   let shapeMesh = new THREE.Mesh(shapeGeometry, shapeMaterial);
+  shapeMesh.layers.set(objectLayer);
   rootObject.add(shapeMesh);
 }
 
@@ -195,26 +200,25 @@ onMounted(async () => {
   });
 
   const tick = () => {
+    renderer.autoClear = true;
+    camera.layers.set(worldLayer);
     renderer.render(scene, camera);
+
+    renderer.autoClear = false;
+    camera.layers.set(objectLayer);
+    renderer.render(scene, camera);
+
     window.requestAnimationFrame(tick);
   };
 
-  // Load the data file and draw all regions
-  // fileLoader.load(
-  //   "../src/assets/NUTS_RG_60M_2021_4326_lvl1.geojson",
-  //   (json) => {
-  //     const data = JSON.parse(json);
-  //     addAllRegions(data);
-  //   }
-  // );
   geoData = await loadJsonFile(
     "../src/assets/NUTS_RG_60M_2021_4326_lvl1.geojson"
   );
   covidData = await loadJsonFile(
     "../src/assets/sample-covid-data-2022-10.json"
   );
-  addAllRegions();
 
+  addAllRegions();
   tick();
 });
 </script>
