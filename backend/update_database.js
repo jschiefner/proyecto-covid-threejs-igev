@@ -98,3 +98,13 @@ models.caseweek.findOne({order: [['date', 'DESC']]}).then((last) => {
     })
     console.log(`Saved ${counter} new entries`)
 })
+
+
+// * To extract a specific week into a sample file:
+// const fs = require('fs')
+// const models = require('./models)
+// copy in parse date functions
+// let m;
+// models.caseweek.findAll({where: {date: parseDate('2022-10')}}).then((elems) => m = elems) // to parse
+// await...
+// fs.writeFileSync('data.json', JSON.stringify(m))
