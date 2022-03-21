@@ -1,7 +1,7 @@
-# Vue 3 + Vite
+# Proyecto IGEV - Casos de Covid en Europa
 
-This template should help get you started developing with Vue 3 in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+Este Repo es para mi **Proyecto** en IGEV. Para ver en el navegador el prototipo actual, sigue este enlace: [https://jschiefner.github.io/](https://jschiefner.github.io/)
 
-## Recommended IDE Setup
+### Estructura del proyecto
 
-- [VSCode](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=johnsoncodehk.volar)
+Hay una parte Frontend para la visualización y una parte Backend para administrar los datos. Actualmente, el Backend no es utilizado. En el frontend, el fichiero [Globe.vue](frontend/src/components/Globe.vue) es el más importante y interesante, porque se trata de la visualización en 3D en que consiste el prototipo actualmente.
