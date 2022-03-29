@@ -13,6 +13,8 @@ let geoData, covidData;
 let tooltipElement;
 let tooltipString = ref("");
 
+const offset = 700;
+
 const worldLayer = 0,
   objectLayer = 1;
 
@@ -34,7 +36,7 @@ function loadJsonFile(location) {
 
 // for the screen size
 const sizes = {
-  width: window.innerWidth,
+  width: window.innerWidth + offset,
   height: window.innerHeight,
 };
 
@@ -226,7 +228,6 @@ onMounted(async () => {
     antialias: true,
     canvas: canvas,
   });
-  // renderer.setClearColor(0x404040);
   renderer.setSize(sizes.width, sizes.height);
 
   // Create and init OrbitControls
@@ -236,12 +237,14 @@ onMounted(async () => {
   controls.screenSpacePanning = true;
   controls.zoomSpeed = 0.2;
 
+  let container = document.querySelector('#container')
+  container.style.right = `${offset}px`
+
   // Setup skybox
   const materialArray = createMaterialArray("../src/assets/skybox/corona");
   const skyboxGeo = new THREE.BoxGeometry(10000, 10000, 10000);
   const skybox = new THREE.Mesh(skyboxGeo, materialArray);
   scene.add(skybox);
-
 
   // Setup tooltip
   tooltipElement = document.querySelector("#tooltip");
@@ -252,14 +255,14 @@ onMounted(async () => {
     }px;`;
 
     // update the mouse variable
-    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.x = (event.clientX / (window.innerWidth + offset)) * 2 - 1;
     mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
   });
 
   // Properly resize window when necessary
   window.addEventListener("resize", () => {
     // Update sizes
-    sizes.width = window.innerWidth;
+    sizes.width = window.innerWidth + offset;
     sizes.height = window.innerHeight;
 
     // Update camera
@@ -334,7 +337,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div>
+  <div id="container">
     <canvas class="webgl"></canvas>
     <div id="tooltip" class="hidden">{{ tooltipString }}</div>
   </div>
@@ -350,6 +353,11 @@ body {
 canvas {
   width: 100%;
   height: 100%;
+}
+#container {
+  position: absolute;
+  top: 0px;
+  left: 0px;
 }
 div#tooltip {
   position: absolute;
