@@ -1,10 +1,8 @@
 {
-  "name": "backend",
+  "name": "preprocessing",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
   "scripts": {
-    "dev": "node index.js",
     "update": "node update_database.js",
     "extract-nuts": "node extract_nuts_codes_covid_data.js",
     "extract-regions": "node extract_correct_regions_with_nuts_codes.js"
@@ -12,7 +10,6 @@
   "author": "jschiefner",
   "license": "ISC",
   "dependencies": {
-    "express": "^4.17.3",
     "pg": "^8.7.3",
     "sequelize": "^6.17.0",
     "sequelize-cli": "^6.4.1"
