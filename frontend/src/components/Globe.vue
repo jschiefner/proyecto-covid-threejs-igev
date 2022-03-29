@@ -260,7 +260,7 @@ onMounted(async () => {
     renderer.setSize(sizes.width, sizes.height);
   });
 
-  document.addEventListener('click', () => {
+  canvas.addEventListener('click', () => {
     emit('regionSelected', intersectedObject?.name)
   }, false)
 
