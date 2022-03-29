@@ -75,7 +75,13 @@ function parseDate(dateString) {
 // }
 
 models.caseweek.findOne({order: [['date', 'DESC']]}).then((last) => {
-    const lastTime = last.date.getTime()
+
+    let lastTime
+    if (last) {
+        lastTime = last.date.getTime()
+    } else {
+        lastTime = 0;
+    }
 
     let counter = 0;
     file.forEach(element => {

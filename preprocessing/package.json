@@ -5,7 +5,8 @@
   "scripts": {
     "update": "node update_database.js",
     "extract-nuts": "node extract_nuts_codes_covid_data.js",
-    "extract-regions": "node extract_correct_regions_with_nuts_codes.js"
+    "extract-regions": "node extract_correct_regions_with_nuts_codes.js",
+    "create-covid-file": "node create_covid_file_all_weeks.js"
   },
   "author": "jschiefner",
   "license": "ISC",
