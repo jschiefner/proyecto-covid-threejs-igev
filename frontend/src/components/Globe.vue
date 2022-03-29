@@ -217,7 +217,7 @@ onMounted(async () => {
   };
 
   geoData = await loadJsonFile(
-    "../src/assets/NUTS_RG_60M_2021_4326_lvl1.geojson"
+    "../src/assets/NUTS_RG_60M_2021_4326.geojson"
   );
   covidData = await loadJsonFile(
     "../src/assets/sample-covid-data-2022-10.json"
