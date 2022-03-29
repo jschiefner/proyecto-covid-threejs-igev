@@ -46,8 +46,11 @@ var camera = new THREE.PerspectiveCamera(
   75,
   sizes.width / sizes.height,
   1,
-  2000
+  10000
 );
+new THREE.PerspectiveCamera(
+
+)
 camera.position.set(370, 370, -15);
 
 // Prepare Raycaster
@@ -94,13 +97,32 @@ mapMaterial.wrapS = THREE.RepeatWrapping;
 mapMaterial.wrapT = THREE.RepeatWrapping;
 let material = new THREE.MeshPhongMaterial({
   map: mapMaterial,
-  color: 0x3366aa,
+  color: 0xb0c8e8,
   // opacity: 0.1,
   // transparent: true,
 });
 let mesh = new THREE.Mesh(geometry, material);
 mesh.layers.set(worldLayer);
 scene.add(mesh);
+
+// Skybox
+function createPathStrings(filename) {
+  const fileType = ".png";
+  const sides = ["ft", "bk", "up", "dn", "rt", "lf"];
+  const pathStings = sides.map(side => {
+    return filename + "_" + side + fileType;
+  });
+  return pathStings;
+}
+
+function createMaterialArray(filename) {
+  const skyboxImagepaths = createPathStrings(filename)
+  const materialArray = skyboxImagepaths.map(image => {
+    let texture = texLoader.load(image)
+    return new THREE.MeshBasicMaterial({ map: texture, side: THREE.BackSide, transparent: true, opacity: 0.5 })
+  })
+  return materialArray
+}
 
 // Variables for the extrusion object creation
 let rootObject = null;
@@ -204,7 +226,7 @@ onMounted(async () => {
     antialias: true,
     canvas: canvas,
   });
-  renderer.setClearColor(0x404040);
+  // renderer.setClearColor(0x404040);
   renderer.setSize(sizes.width, sizes.height);
 
   // Create and init OrbitControls
@@ -212,7 +234,14 @@ onMounted(async () => {
   controls.enableDamping = true; // an animation loop is required when either damping or auto-rotation are enabled
   controls.dampingFactor = 0.05;
   controls.screenSpacePanning = true;
-  controls.zoomSpeed = 0.1;
+  controls.zoomSpeed = 0.2;
+
+  // Setup skybox
+  const materialArray = createMaterialArray("../src/assets/skybox/corona");
+  const skyboxGeo = new THREE.BoxGeometry(10000, 10000, 10000);
+  const skybox = new THREE.Mesh(skyboxGeo, materialArray);
+  scene.add(skybox);
+
 
   // Setup tooltip
   tooltipElement = document.querySelector("#tooltip");
