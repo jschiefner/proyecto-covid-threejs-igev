@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@tweenjs/tween.js": "^18.6.4",
+    "bulma": "^0.9.3",
     "dat.gui": "^0.7.9",
     "three": "^0.124.0",
     "vue": "^3.2.25"
