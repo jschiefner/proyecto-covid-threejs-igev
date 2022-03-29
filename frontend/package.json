@@ -12,7 +12,8 @@
     "bulma": "^0.9.3",
     "dat.gui": "^0.7.9",
     "three": "^0.124.0",
-    "vue": "^3.2.25"
+    "vue": "^3.2.25",
+    "vue-datepicker-next": "^1.0.2"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^2.2.0",
