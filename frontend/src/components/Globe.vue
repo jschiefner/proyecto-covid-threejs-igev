@@ -40,9 +40,6 @@ var camera = new THREE.PerspectiveCamera(
   1,
   10000
 );
-new THREE.PerspectiveCamera(
-
-)
 camera.position.set(370, 370, -15);
 
 // Prepare Raycaster
@@ -223,7 +220,9 @@ onMounted(async () => {
   controls.enableDamping = true; // an animation loop is required when either damping or auto-rotation are enabled
   controls.dampingFactor = 0.05;
   controls.screenSpacePanning = true;
-  controls.zoomSpeed = 0.2;
+  controls.zoomSpeed = 0.2
+  controls.minDistance = 350
+  controls.maxDistance = 2000
 
   let container = document.querySelector('#container')
   container.style.right = `${offset}px`
