@@ -1,13 +1,18 @@
 <script setup>
-import { onMounted } from "@vue/runtime-core";
+import { nextTick, onMounted } from "@vue/runtime-core";
 import * as THREE from "three";
 import * as dat from "dat.gui";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+import { VueElement, ref } from "vue";
 
 // Create loaders and globally usable variables for data
 const fileLoader = new THREE.FileLoader();
 const texLoader = new THREE.TextureLoader();
 let geoData, covidData;
+
+let tooltipElement;
+let tooltipString = ref("")
+tooltipString.value = "HIiii"
 
 const worldLayer = 0,
   objectLayer = 1;
@@ -138,7 +143,7 @@ function addRegion(shapePoints, covidDataWeek) {
   });
   let shapeMesh = new THREE.Mesh(shapeGeometry, shapeMaterial);
   shapeMesh.layers.set(objectLayer);
-  shapeMesh.name = covidDataWeek.nuts
+  shapeMesh.name = covidDataWeek.region
   rootObject.add(shapeMesh);
 }
 
@@ -191,13 +196,13 @@ function addAllRegions() {
 }
 
 onMounted(async () => {
+  const canvas = document.querySelector('.webgl')
   var renderer = new THREE.WebGLRenderer({
     antialias: true,
+    canvas: canvas,
   });
   renderer.setClearColor(0x404040);
   renderer.setSize(sizes.width, sizes.height);
-  const container = document.getElementById( 'ThreeJS' );
-	container.appendChild( renderer.domElement );
 
   // Create and init OrbitControls
   var controls = new OrbitControls(camera, renderer.domElement);
@@ -215,6 +220,8 @@ onMounted(async () => {
   let tootltipTexture = new THREE.Texture(canvasElement);
   tootltipTexture.needsUpdate = true;
 
+  tooltipElement = document.querySelector("#tooltip")
+
   var spriteMaterial = new THREE.SpriteMaterial({
     map: tootltipTexture,
     useScreenCoordinates: true,
@@ -231,7 +238,7 @@ onMounted(async () => {
     "mousemove",
     (event) => {
       tooltipSprite.position.set(event.clientX, event.clientY, -300);
-      console.log(tooltipSprite.position)
+      tooltipElement.style = `top: ${event.clientY - 6}px; left: ${event.clientX + 15}px;`
 
       // update the mouse variable
       mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
@@ -280,6 +287,8 @@ onMounted(async () => {
     if (intersects.length > 0) {
       // if the closest object intersected is not the currently stored intersection object
       if (intersects[0].object != INTERSECTED) {
+        tooltipElement.classList.remove('hidden')
+
         // restore previous intersection object (if it exists) to its original color
         if (INTERSECTED)
           INTERSECTED.material.color.setHex(INTERSECTED.currentHex);
@@ -304,6 +313,7 @@ onMounted(async () => {
           tooltipContext.fillStyle = "rgba(0,0,0,1)"; // text color
           tooltipContext.fillText(message, 4, 20);
           tootltipTexture.needsUpdate = true;
+          tooltipString.value = message;
         } else {
           tooltipContext.clearRect(0, 0, 300, 300);
           tootltipTexture.needsUpdate = true;
@@ -319,6 +329,8 @@ onMounted(async () => {
       INTERSECTED = null;
       tooltipContext.clearRect(0, 0, 300, 300);
       tootltipTexture.needsUpdate = true;
+
+      tooltipElement.classList.add('hidden')
     }
 
     controls.update()
@@ -336,7 +348,10 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div id="ThreeJS" style="position: absolute; left:0px; top:0px"></div>
+  <div>
+    <canvas class="webgl"></canvas>
+    <div id="tooltip" class="hidden">{{tooltipString}}</div>
+  </div>
 </template>
 
 <style scoped>
@@ -349,5 +364,15 @@ body {
 canvas {
   width: 100%;
   height: 100%;
+}
+div#tooltip {
+    position: absolute;
+    top: 0;
+    left: 0;
+    background: white;
+    border: 3px solid black;
+}
+.hidden {
+  display: none;
 }
 </style>
