@@ -1,5 +1,7 @@
 <script setup>
 import "bulma/css/bulma.css";
+
+const emit = defineEmits(['search'])
 </script>
 
 <template>
@@ -13,7 +15,7 @@ import "bulma/css/bulma.css";
         </span>
       </p>
       <div class="control">
-        <a class="button is-info">Buscar</a>
+        <a class="button is-info" @click="this.$emit('search')">Buscar</a>
       </div>
     </div>
     <hr />

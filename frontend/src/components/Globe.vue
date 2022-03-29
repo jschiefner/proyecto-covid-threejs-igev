@@ -1,38 +1,28 @@
 <script setup>
-import { nextTick, onMounted } from "@vue/runtime-core";
-import * as THREE from "three";
-import * as dat from "dat.gui";
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
-import { VueElement, ref } from "vue";
+import { nextTick, onMounted, watch } from "@vue/runtime-core"
+import * as THREE from "three"
+import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js"
+import { VueElement, ref } from "vue"
+import { loadJsonFile } from "../helpers/fileLoader.js"
+
+const props = defineProps({
+  covidData: Array
+})
+
+const emits = defineEmits(['selectedRegion'])
 
 // Create loaders and globally usable variables for data
-const fileLoader = new THREE.FileLoader();
 const texLoader = new THREE.TextureLoader();
 let geoData, covidData;
 
 let tooltipElement;
 let tooltipString = ref("");
 
-const offset = 700;
+const offset = 700; // for the globes offset to the right, TODO: change based on window width
+let rootObject = new THREE.Object3D(); // root object for the extruded elements
 
 const worldLayer = 0,
   objectLayer = 1;
-
-// Create awaitable version of file loader
-function loadJsonFile(location) {
-  return new Promise((resolve, reject) => {
-    fileLoader.load(
-      location,
-      (data) => {
-        resolve(JSON.parse(data));
-      },
-      null,
-      (event) => {
-        reject(event);
-      }
-    );
-  });
-}
 
 // for the screen size
 const sizes = {
@@ -126,9 +116,6 @@ function createMaterialArray(filename) {
   return materialArray
 }
 
-// Variables for the extrusion object creation
-let rootObject = null;
-
 // Draw a single region
 function addRegion(shapePoints, covidDataWeek) {
   let shape = new THREE.Shape(shapePoints);
@@ -178,6 +165,7 @@ function addRegion(shapePoints, covidDataWeek) {
 
 // Draw all regions
 function addAllRegions() {
+  console.log("adding all regions, length: ", props.covidData.length)
   if (rootObject) {
     scene.remove(rootObject);
   }
@@ -187,7 +175,7 @@ function addAllRegions() {
 
   geoData.features.forEach(function (region) {
     const regionNutsCode = region.properties.NUTS_ID;
-    const covidDataWeek = covidData.find((element) => {
+    const covidDataWeek = props.covidData.find((element) => {
       return element.nuts == regionNutsCode;
     });
 
@@ -306,7 +294,7 @@ onMounted(async () => {
         // update text, if it has a "name" field. This will contain the nuts code of the intersected region
         const name = intersects[0].object.name;
         if (name) {
-          var covidDataElement = covidData.find(
+          var covidDataElement = props.covidData.find(
             (element) => element.nuts == name
           );
           tooltipString.value = `${covidDataElement.region}: ${covidDataElement.incidence}`;
@@ -327,11 +315,11 @@ onMounted(async () => {
   };
 
   geoData = await loadJsonFile("../src/assets/NUTS_RG_60M_2021_4326.geojson");
-  covidData = await loadJsonFile(
-    "../src/assets/sample-covid-data-2022-10.json"
-  );
 
-  addAllRegions();
+  watch(props.covidData, () => {
+    console.log("watch called")
+    addAllRegions()
+  }, {immediate: true, deep: true})
   tick();
 });
 </script>
