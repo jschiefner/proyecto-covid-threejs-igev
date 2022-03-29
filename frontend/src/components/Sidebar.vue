@@ -1,7 +1,22 @@
 <script setup>
+import { computed } from "@vue/reactivity";
 import "bulma/css/bulma.css";
 
-const emit = defineEmits(['search'])
+const props = defineProps({
+  covidData: Array,
+  selectedNutsCode: String,
+});
+
+const selectedRegion = computed({
+  get() {
+    if (props.selectedNutsCode == "") return null;
+    if (props.covidData.length == 0) return null;
+
+    return props.covidData.find((element) => element.nuts == props.selectedNutsCode);
+  },
+});
+
+const emit = defineEmits(["search"]);
 </script>
 
 <template>
@@ -19,7 +34,7 @@ const emit = defineEmits(['search'])
       </div>
     </div>
     <hr />
-
+    <h1>selected region: {{selectedRegion == null ? "none" : selectedRegion.region}}</h1>
   </div>
 </template>
 
@@ -41,6 +56,6 @@ h4 {
 }
 
 .field {
-    justify-content: center;
+  justify-content: center;
 }
 </style>

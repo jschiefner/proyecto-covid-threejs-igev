@@ -6,6 +6,7 @@ import Sidebar from "./components/Sidebar.vue";
 import { ref } from "vue";
 
 let covidData = ref([]);
+let selectedNutsCode = ref("") // TODO: start with ref to null?
 
 const init = async function() {
   covidData.value = await loadJsonFile(
@@ -18,13 +19,17 @@ const search = function() {
   covidData.value = covidData.value.splice(0, covidData.value.length)
 }
 
+const regionSelected = function(nuts) {
+  selectedNutsCode.value = nuts
+}
+
 init();
 </script>
 
 <template>
   <div>
-    <Sidebar @search="search"/>
-    <Globe :covid-data=covidData />
+    <Sidebar :covid-data="covidData" :selectedNutsCode="selectedNutsCode" @search="search"/>
+    <Globe :covid-data=covidData @region-selected="regionSelected"/>
   </div>
 </template>
 

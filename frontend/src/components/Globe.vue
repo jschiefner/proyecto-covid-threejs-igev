@@ -9,7 +9,7 @@ const props = defineProps({
   covidData: Array
 })
 
-const emits = defineEmits(['selectedRegion'])
+const emit = defineEmits(['regionSelected'])
 
 // Create loaders and globally usable variables for data
 const texLoader = new THREE.TextureLoader();
@@ -237,7 +237,7 @@ onMounted(async () => {
   // Setup tooltip
   tooltipElement = document.querySelector("#tooltip");
 
-  window.addEventListener("mousemove", (event) => {
+  canvas.addEventListener("mousemove", (event) => {
     tooltipElement.style = `top: ${event.clientY - 6}px; left: ${
       event.clientX + 15
     }px;`;
@@ -260,6 +260,10 @@ onMounted(async () => {
     // Update renderer
     renderer.setSize(sizes.width, sizes.height);
   });
+
+  document.addEventListener('click', () => {
+    emit('regionSelected', intersectedObject?.name)
+  }, false)
 
   const tick = () => {
     renderer.autoClear = true;
