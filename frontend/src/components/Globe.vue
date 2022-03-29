@@ -11,8 +11,7 @@ const texLoader = new THREE.TextureLoader();
 let geoData, covidData;
 
 let tooltipElement;
-let tooltipString = ref("")
-tooltipString.value = "HIiii"
+let tooltipString = ref("");
 
 const worldLayer = 0,
   objectLayer = 1;
@@ -50,6 +49,12 @@ var camera = new THREE.PerspectiveCamera(
   2000
 );
 camera.position.set(370, 370, -15);
+
+// Prepare Raycaster
+let intersectedObject;
+var rayCaster = new THREE.Raycaster();
+rayCaster.layers.set(objectLayer);
+let mouse = new THREE.Vector2(-1,-1); // vector to store mouse position
 
 // Create and init lights
 let worldLight = new THREE.DirectionalLight(0xffffff);
@@ -143,7 +148,7 @@ function addRegion(shapePoints, covidDataWeek) {
   });
   let shapeMesh = new THREE.Mesh(shapeGeometry, shapeMaterial);
   shapeMesh.layers.set(objectLayer);
-  shapeMesh.name = covidDataWeek.region
+  shapeMesh.name = covidDataWeek.nuts;
   rootObject.add(shapeMesh);
 }
 
@@ -162,10 +167,8 @@ function addAllRegions() {
       return element.nuts == regionNutsCode;
     });
 
-    if (covidDataWeek) {
-      // console.log(JSON.stringify({regionNutsCode, element: covidDataWeek.nuts}))
-    } else {
-      // console.log(`could not find for ${regionNutsCode}`)
+    if (!covidDataWeek) {
+      // could not covid data but a region is available
       return;
     }
 
@@ -196,7 +199,7 @@ function addAllRegions() {
 }
 
 onMounted(async () => {
-  const canvas = document.querySelector('.webgl')
+  const canvas = document.querySelector(".webgl");
   var renderer = new THREE.WebGLRenderer({
     antialias: true,
     canvas: canvas,
@@ -212,40 +215,17 @@ onMounted(async () => {
   controls.zoomSpeed = 0.1;
 
   // Setup tooltip
-  const canvasElement = document.createElement("canvas");
-  let tooltipContext = canvasElement.getContext("2d");
-  tooltipContext.font = "Bold 20px Arial";
-  tooltipContext.fillStyle = "rgba(0,0,0,0.95)";
-  tooltipContext.fillText("Hello, world!", 0, 20);
-  let tootltipTexture = new THREE.Texture(canvasElement);
-  tootltipTexture.needsUpdate = true;
+  tooltipElement = document.querySelector("#tooltip");
 
-  tooltipElement = document.querySelector("#tooltip")
+  window.addEventListener("mousemove", (event) => {
+    tooltipElement.style = `top: ${event.clientY - 6}px; left: ${
+      event.clientX + 15
+    }px;`;
 
-  var spriteMaterial = new THREE.SpriteMaterial({
-    map: tootltipTexture,
-    useScreenCoordinates: true,
+    // update the mouse variable
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
   });
-
-  let tooltipSprite = new THREE.Sprite(spriteMaterial);
-  tooltipSprite.scale.set(200, 100, 1.0);
-  tooltipSprite.position.set(50, 50, 0);
-  scene.add(tooltipSprite);
-
-  let mouse = new THREE.Vector2();
-
-  window.addEventListener(
-    "mousemove",
-    (event) => {
-      tooltipSprite.position.set(event.clientX, event.clientY, -300);
-      tooltipElement.style = `top: ${event.clientY - 6}px; left: ${event.clientX + 15}px;`
-
-      // update the mouse variable
-      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-    },
-    false
-  );
 
   // Properly resize window when necessary
   window.addEventListener("resize", () => {
@@ -261,8 +241,6 @@ onMounted(async () => {
     renderer.setSize(sizes.width, sizes.height);
   });
 
-  let INTERSECTED;
-
   const tick = () => {
     renderer.autoClear = true;
     camera.layers.set(worldLayer);
@@ -272,69 +250,48 @@ onMounted(async () => {
     camera.layers.set(objectLayer);
     renderer.render(scene, camera);
 
-    // raycasting etc
-    var vector = new THREE.Vector3(mouse.x, mouse.y, 1);
-    vector.unproject(camera);
-    // TODO: create raycaster only once and use setCamera or something to set position and stuff
-    var ray = new THREE.Raycaster(
-      camera.position,
-      vector.sub(camera.position).normalize()
-    );
-    ray.camera = camera;
-    ray.layers.set(objectLayer);
+    // Shoot ray to mouse position
+    rayCaster.setFromCamera(mouse, camera);
+    var intersects = rayCaster.intersectObjects(rootObject.children);
 
-    var intersects = ray.intersectObjects(rootObject.children);
     if (intersects.length > 0) {
-      // if the closest object intersected is not the currently stored intersection object
-      if (intersects[0].object != INTERSECTED) {
-        tooltipElement.classList.remove('hidden')
+      // found an intersecting object
+      if (intersects[0].object != intersectedObject) {
+        // if the closest object intersected is not the currently stored intersection object
+        tooltipElement.classList.remove("hidden");
 
         // restore previous intersection object (if it exists) to its original color
-        if (INTERSECTED)
-          INTERSECTED.material.color.setHex(INTERSECTED.currentHex);
+        if (intersectedObject)
+          intersectedObject.material.color.setHex(intersectedObject.currentHex);
         // store reference to closest object as current intersection object
-        INTERSECTED = intersects[0].object;
+        intersectedObject = intersects[0].object;
         // store color of closest object (for later restoration)
-        INTERSECTED.currentHex = INTERSECTED.material.color.getHex();
+        intersectedObject.currentHex =
+          intersectedObject.material.color.getHex();
         // set a new color for closest object
-        INTERSECTED.material.color.setHex(0xffff00);
+        intersectedObject.material.color.setHex(0x00cc00);
 
-        // update text, if it has a "name" field.
-        if (intersects[0].object.name) {
-          tooltipContext.clearRect(0, 0, 640, 480);
-
-          var message = intersects[0].object.name;
-          var metrics = tooltipContext.measureText(message);
-          var width = metrics.width;
-          tooltipContext.fillStyle = "rgba(0,0,0,0.95)"; // black border
-          tooltipContext.fillRect(0, 0, width + 8, 20 + 8);
-          tooltipContext.fillStyle = "rgba(255,255,255,0.95)"; // white filler
-          tooltipContext.fillRect(2, 2, width + 4, 20 + 4);
-          tooltipContext.fillStyle = "rgba(0,0,0,1)"; // text color
-          tooltipContext.fillText(message, 4, 20);
-          tootltipTexture.needsUpdate = true;
-          tooltipString.value = message;
-        } else {
-          tooltipContext.clearRect(0, 0, 300, 300);
-          tootltipTexture.needsUpdate = true;
+        // update text, if it has a "name" field. This will contain the nuts code of the intersected region
+        const name = intersects[0].object.name;
+        if (name) {
+          var covidDataElement = covidData.find(
+            (element) => element.nuts == name
+          );
+          tooltipString.value = `${covidDataElement.region}: ${covidDataElement.incidence}`;
         }
-      } // It is the same object that is already intersected, so dont do anything
-    } // there are no intersections
-    else {
+      } // else: it is the same object that is already intersected, so dont do anything
+    } else {
       // restore previous intersection object (if it exists) to its original color
-      if (INTERSECTED)
-        INTERSECTED.material.color.setHex(INTERSECTED.currentHex);
-      // remove previous intersection object reference
-      //     by setting current intersection object to "nothing"
-      INTERSECTED = null;
-      tooltipContext.clearRect(0, 0, 300, 300);
-      tootltipTexture.needsUpdate = true;
+      if (intersectedObject)
+        intersectedObject.material.color.setHex(intersectedObject.currentHex);
 
-      tooltipElement.classList.add('hidden')
+      // remove previous intersection object reference
+      intersectedObject = null;
+      tooltipElement.classList.add("hidden");
     }
 
-    controls.update()
-    window.requestAnimationFrame(tick);
+    controls.update(); // let the globe keep spinning if user lets go of the mouse
+    window.requestAnimationFrame(tick); // request a new animation frame
   };
 
   geoData = await loadJsonFile("../src/assets/NUTS_RG_60M_2021_4326.geojson");
@@ -350,7 +307,7 @@ onMounted(async () => {
 <template>
   <div>
     <canvas class="webgl"></canvas>
-    <div id="tooltip" class="hidden">{{tooltipString}}</div>
+    <div id="tooltip" class="hidden">{{ tooltipString }}</div>
   </div>
 </template>
 
@@ -366,11 +323,11 @@ canvas {
   height: 100%;
 }
 div#tooltip {
-    position: absolute;
-    top: 0;
-    left: 0;
-    background: white;
-    border: 3px solid black;
+  position: absolute;
+  top: 0;
+  left: 0;
+  background: white;
+  border: 3px solid black;
 }
 .hidden {
   display: none;
