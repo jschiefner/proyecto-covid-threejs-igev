@@ -52,10 +52,20 @@ worldLight.position.set(camera.position.x, camera.position.y, +camera.position.z
 worldLight.layers.set(worldLayer, objectLayer);
 scene.add(worldLight);
 
-let objectLight = new THREE.DirectionalLight(0xffffff);
-objectLight.position.set(0, 0, 1);
-objectLight.layers.set(objectLayer);
-scene.add(objectLight);
+let objectLightInner = new THREE.DirectionalLight(0xffffff);
+objectLightInner.position.set(0, 0, 1);
+objectLightInner.layers.set(objectLayer);
+scene.add(objectLightInner);
+
+var objectLightOuter1 = new THREE.DirectionalLight(0xffffff);
+objectLightOuter1.position.set(1, 0, 0);
+objectLightOuter1.layers.set(objectLayer)
+scene.add(objectLightOuter1);
+
+var objectLightOuter2 = new THREE.DirectionalLight(0xffffff);
+objectLightOuter2.position.set(-1, 0, 0);
+objectLightOuter2.layers.set(objectLayer)
+scene.add(objectLightOuter2);
 
 let ambientLight = new THREE.AmbientLight(0xffffff, 0.5)
 scene.add(ambientLight)
