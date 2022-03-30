@@ -32,11 +32,31 @@ const regionSelected = function(nuts) {
   selectedNutsCode.value = nuts
 }
 
-const dateSelected = function(date) {
-  let momentDate = moment(date.toJSON())
+const setSelectedDate = function(date) {
+  let momentDate = date._isAMomentObject ? date : moment(date)
   momentDate.utc(true)
   momentDate.startOf('week')
+  if (momentDate.isDST()) momentDate.add(1, 'h')
   selectedDate.value = momentDate.toDate()
+}
+
+const oneWeekBack = function() {
+  let momentDate = moment(selectedDate.value)
+  momentDate.subtract(1, 'w')
+  setSelectedDate(momentDate.toDate())
+}
+
+const oneWeekForward = function() {
+  let momentDate = moment(selectedDate.value)
+  momentDate.add(1, 'w')
+  setSelectedDate(momentDate.toDate())
+}
+
+const jumpCurrentWeek = function() {
+  let momentDate = moment()
+  momentDate.utc(true)
+  momentDate.startOf('week')
+  setSelectedDate(momentDate.toDate())
 }
 
 init();
@@ -44,7 +64,7 @@ init();
 
 <template>
   <div>
-    <Sidebar :covid-data="covidData" :selectedNutsCode="selectedNutsCode" :selected-date="selectedDate" @date-selected="dateSelected" @search="search"/>
+    <Sidebar :covid-data="covidData" :selectedNutsCode="selectedNutsCode" :selected-date="selectedDate" @date-selected="setSelectedDate"  @one-week-back="oneWeekBack" @one-week-forward="oneWeekForward" @jumpCurrentWeek="jumpCurrentWeek" @search="search"/>
     <Globe :covid-data="covidData" :selected-date="selectedDate" @region-selected="regionSelected" />
   </div>
 </template>
