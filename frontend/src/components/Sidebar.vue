@@ -6,26 +6,28 @@ import DatePicker from 'vue-datepicker-next';
 import 'vue-datepicker-next/index.css';
 
 const props = defineProps({
-  covidData: Array,
+  covidData: Object,
   selectedNutsCode: String,
+  selectedDate: Date,
 });
+const emit = defineEmits(['search', 'dateSelected']);
 
 const selectedRegion = computed({
   get() {
     if (props.selectedNutsCode == "") return null;
     if (props.covidData.length == 0) return null;
 
-    return props.covidData.find((element) => element.nuts == props.selectedNutsCode);
+    const covidDataForDate = props.covidData[props.selectedDate.toJSON()]
+    if (!covidDataForDate) {
+      return {}
+    }
+    const covidDataForDateAndNutsCode = covidDataForDate[props.selectedNutsCode];
+    if (!covidDataForDateAndNutsCode) {
+      return {}
+    }
+    return covidDataForDateAndNutsCode
   },
 });
-
-const selectedDate = ref(new Date());
-const setSelectedDate = function(date) {
-  const diff = date.getDate() - date.getDay() + (date.getDay() === 0 ? -6 : 1);
-  selectedDate.value = new Date(date.setDate(diff))
-}
-
-const emit = defineEmits(["search"]);
 </script>
 
 <template>
@@ -43,7 +45,7 @@ const emit = defineEmits(["search"]);
       </div>
     </div>
     <hr />
-    <date-picker :value="selectedDate" @change="setSelectedDate" type="week" format="DD/MM/YYYY" :clearable="false" :lang="{formatLocale: {firstDayOfWeek: 1}}"></date-picker>
+    <date-picker :value="selectedDate" @change="this.$emit('dateSelected', $event)" type="week" format="DD/MM/YYYY" :clearable="false" :lang="{formatLocale: {firstDayOfWeek: 1}}"></date-picker>
     <hr />
     <h1>selected region: {{selectedRegion == null ? "none" : selectedRegion.region}}</h1>
   </div>

@@ -4,13 +4,6 @@ const models = require('./models')
 async function main() {
     const [result, metadata] = await models.sequelize.query('select distinct date from caseweeks order by date')
     const dates = result.map((element) => element.date)
-    console.log(JSON.stringify(dates))
-
-    // const firstDate = new Date(dates[0])
-    // console.log(firstDate)
-
-    // const firstCaseWeeks = await models.caseweek.findAll({where: {date: new Date(firstDate)}});
-    // console.log(firstCaseWeeks.length)
 
     let output = {}
     await Promise.all(dates.map(async (dateString) => {
@@ -21,6 +14,7 @@ async function main() {
         caseweeks.forEach((caseweek) => {
             dateRootObject[caseweek.nuts] = caseweek
         })
+        console.log(date, date.toJSON())
         output[date.toJSON()] = dateRootObject
     }))
 

@@ -11,6 +11,7 @@
   "author": "jschiefner",
   "license": "ISC",
   "dependencies": {
+    "moment": "^2.29.1",
     "pg": "^8.7.3",
     "sequelize": "^6.17.0",
     "sequelize-cli": "^6.4.1"

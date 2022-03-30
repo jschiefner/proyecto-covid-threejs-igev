@@ -6,10 +6,16 @@ import { VueElement, ref } from "vue"
 import { loadJsonFile } from "../helpers/fileLoader.js"
 
 const props = defineProps({
-  covidData: Array
+  covidData: Object,
+  selectedDate: Date,
 })
 
 const emit = defineEmits(['regionSelected'])
+
+watch(() => props.selectedDate, () => {
+    console.log("watch called")
+    addAllRegions()
+  })
 
 // Create loaders and globally usable variables for data
 const texLoader = new THREE.TextureLoader();
@@ -162,7 +168,7 @@ function addRegion(shapePoints, covidDataWeek) {
 
 // Draw all regions
 function addAllRegions() {
-  console.log("adding all regions, length: ", props.covidData.length)
+  console.log("adding all regions")
   if (rootObject) {
     scene.remove(rootObject);
   }
@@ -170,11 +176,17 @@ function addAllRegions() {
   rootObject = new THREE.Object3D();
   scene.add(rootObject);
 
-  geoData.features.forEach(function (region) {
+  geoData.features.forEach(function(region) {
     const regionNutsCode = region.properties.NUTS_ID;
-    const covidDataWeek = props.covidData.find((element) => {
-      return element.nuts == regionNutsCode;
-    });
+    if (props.covidData == null || Object.keys(props.covidData) == 0) {
+      console.log("early return", props.covidData == null)
+      return;
+    }
+    const covidDataForDate = props.covidData[props.selectedDate.toJSON()]
+    if (!covidDataForDate) {
+      debugger
+    }
+    const covidDataWeek = covidDataForDate[regionNutsCode]
 
     if (!covidDataWeek) {
       // could not covid data but a region is available
@@ -297,9 +309,7 @@ onMounted(async () => {
         // update text, if it has a "name" field. This will contain the nuts code of the intersected region
         const name = intersects[0].object.name;
         if (name) {
-          var covidDataElement = props.covidData.find(
-            (element) => element.nuts == name
-          );
+          var covidDataElement = props.covidData[props.selectedDate.toJSON()][name]
           tooltipString.value = `${covidDataElement.region}: ${covidDataElement.incidence}`;
         }
       } // else: it is the same object that is already intersected, so dont do anything
@@ -319,10 +329,6 @@ onMounted(async () => {
 
   geoData = await loadJsonFile("../src/assets/NUTS_RG_60M_2021_4326.geojson");
 
-  watch(props.covidData, () => {
-    console.log("watch called")
-    addAllRegions()
-  }, {immediate: true, deep: true})
   tick();
 });
 </script>
