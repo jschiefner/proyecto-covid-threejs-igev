@@ -9,6 +9,7 @@ import DatePicker from "vue-datepicker-next";
 import "vue-datepicker-next/index.css";
 import BarChart from "./BarChart.vue";
 import { getFlagUrl } from "../helpers/flags.js";
+import VCenter from "./VCenter.vue"
 
 const chartDisplayWeeks = ref(5);
 const casesChartDivide = ref(false);
@@ -137,34 +138,30 @@ onMounted(() => {
   const dateInput = document.querySelector("input[name='date']");
   dateInput.classList.add("input");
   dateInput.classList.remove("mx-input");
+
+  const datePicker = document.querySelector("div.mx-datepicker");
+  datePicker.style.width = "150px";
 });
 </script>
 
 <template>
   <div id="menucontainer" class="container">
     <!-- Search section -->
-    <div class="columns is-vcentered">
+    <div class="columns is-vcentered is-centered">
       <div class="column">
-        <h4 class="title is-4">¿A Donde quieres Viajar?</h4>
-      </div>
-      <div class="field has-addons column">
-        <p class="control has-icons-left">
-          <input class="input" placeholder="Ciudad, Region o País" />
-          <span class="icon is-small is-left">
-            <i class="fa-solid fa-magnifying-glass"></i>
-          </span>
-        </p>
-        <div class="control">
-          <a class="button is-info" @click="this.$emit('search')">Buscar</a>
+        <div class="field has-addons">
+          <p class="control has-icons-left">
+            <input class="input" placeholder="Region" />
+            <span class="icon is-small is-left">
+              <i class="fa-solid fa-magnifying-glass"></i>
+            </span>
+          </p>
+          <div class="control">
+            <a class="button is-info" @click="this.$emit('search')">Buscar</a>
+          </div>
         </div>
       </div>
-    </div>
-    <!-- Date picker section -->
-    <div class="columns is-vcentered">
-      <div class="column">
-        <h4 class="title is-4">¿Cuando?</h4>
-      </div>
-      <div class="column">
+      <div class="column is-narrow">
         <date-picker
           :value="selectedDate"
           @change="this.$emit('dateSelected', $event)"
@@ -174,25 +171,27 @@ onMounted(() => {
           :lang="{ formatLocale: { firstDayOfWeek: 1 } }"
         ></date-picker>
       </div>
-      <div class="field has-addons column">
-        <p class="control">
-          <button class="button" @click="this.$emit('oneWeekBack')">
-            <i class="fas fa-angle-left"></i>
-          </button>
-        </p>
-        <p class="control">
-          <button class="button" @click="this.$emit('jumpCurrentWeek')">
-            <span class="icon is-small">
-              <i class="fas fa-calendar-day"></i>
-            </span>
-            <span>Hoy</span>
-          </button>
-        </p>
-        <p class="control">
-          <button class="button" @click="this.$emit('oneWeekForward')">
-            <i class="fas fa-angle-right"></i>
-          </button>
-        </p>
+      <div class="column is-narrow">
+        <div class="field has-addons">
+          <p class="control">
+            <button class="button" @click="this.$emit('oneWeekBack')">
+              <i class="fas fa-angle-left"></i>
+            </button>
+          </p>
+          <p class="control">
+            <button class="button" @click="this.$emit('jumpCurrentWeek')">
+              <span class="icon is-small">
+                <i class="fas fa-calendar-day"></i>
+              </span>
+              <span>Hoy</span>
+            </button>
+          </p>
+          <p class="control">
+            <button class="button" @click="this.$emit('oneWeekForward')">
+              <i class="fas fa-angle-right"></i>
+            </button>
+          </p>
+        </div>
       </div>
     </div>
 
@@ -214,7 +213,7 @@ onMounted(() => {
               </figure>
             </div>
           </div>
-
+          <!-- level in card -->
           <nav class="level">
             <div class="level-item has-text-centered">
               <div>
@@ -254,35 +253,42 @@ onMounted(() => {
         </div>
       </div>
 
+      <!-- Charts section -->
       <div>
+        <h5 class="title is-5 chart-title">
+          Incidencia accumulada de casos en 14 dias de las semanas pasadas
+        </h5>
         <bar-chart :v-if="isRegionSelected" :chartData="chartDataIncidence" />
+        <h5 class="title is-5 chart-title">Nuevos casos en semanas pasadas</h5>
         <bar-chart
           :v-if="isRegionSelected"
           :chartData="chartDataNewCases"
           :custom-tick-callback="
-            (value, index, ticks) => casesChartDivide ? `${(value * 100).toFixed(2)}%` : value
+            (value, index, ticks) =>
+              casesChartDivide ? `${(value * 100).toFixed(2)}%` : value
           "
         />
       </div>
-      <div class="box transparent-background form-sidebar">
+      <div class="box transparent-background">
         <div class="columns is-vcentered">
           <div class="column">
-            <label class="label">Semanas mostradas</label>
+            <label class="label"
+              >Semanas mostradas: {{ chartDisplayWeeks }}</label
+            >
           </div>
           <div class="column">
             <input
-              class="slider is-fullwidth is-success is-circle"
+              class="slider is-fullwidth is-info is-circle has-output-tooltip"
               step="1"
               min="5"
-              max="14"
+              max="20"
               value="7"
               type="range"
               @input="sliderChanged"
             />
           </div>
-          <div class="column"></div>
           <div class="column">
-            <label class="label">Dividir por población</label>
+            <label class="label">Dividir casos por población</label>
           </div>
           <div class="column">
             <div class="field">
@@ -290,7 +296,7 @@ onMounted(() => {
                 id="switchRoundedSuccess"
                 type="checkbox"
                 name="switchRoundedSuccess"
-                class="switch is-rounded is-success"
+                class="switch is-rounded is-info"
                 @change="checkboxChanged"
               />
               <label for="switchRoundedSuccess"></label>
@@ -299,7 +305,9 @@ onMounted(() => {
         </div>
       </div>
     </div>
-    <h4 v-else class="title is-4">selecciona una región en el mapa</h4>
+    <VCenter v-else>
+      <h2 class="title is-2">Selecciona una región en el mapa</h2>
+    </VCenter>
   </div>
 </template>
 
@@ -315,7 +323,10 @@ div#menucontainer {
   text-align: center;
   padding: 2rem 1rem;
 }
+
+h2,
 h4,
+h5,
 h6 {
   color: white;
 }
@@ -328,7 +339,17 @@ h6 {
   background-color: #ffffff99;
 }
 
-.form-sidebar {
-  /* text-align: left; */
+.chart-title {
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
 }
+
+.no-selection-message {
+  height: 80%;
+  display: flex;
+  align-content: center;
+  justify-content: center;
+}
+
+
 </style>
