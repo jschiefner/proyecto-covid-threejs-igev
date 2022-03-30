@@ -4,13 +4,20 @@ import "bulma/css/bulma.css";
 import { onMounted, watch } from "vue";
 import DatePicker from "vue-datepicker-next";
 import "vue-datepicker-next/index.css";
+import BarChart from "./BarChart.vue";
 
 const props = defineProps({
   covidData: Object,
   selectedNutsCode: String,
   selectedDate: Date,
 });
-const emit = defineEmits(["search", "dateSelected", "oneWeekBack", "oneWeekForward", "jumpCurrentWeek"]);
+const emit = defineEmits([
+  "search",
+  "dateSelected",
+  "oneWeekBack",
+  "oneWeekForward",
+  "jumpCurrentWeek",
+]);
 
 const selectedRegion = computed({
   get() {
@@ -31,10 +38,15 @@ const selectedRegion = computed({
 });
 
 onMounted(() => {
-  const dateInput = document.querySelector("input[name='date']")
-  dateInput.classList.add('input')
-  dateInput.classList.remove('mx-input')
-})
+  const dateInput = document.querySelector("input[name='date']");
+  dateInput.classList.add("input");
+  dateInput.classList.remove("mx-input");
+});
+
+const chartData = {
+  labels: ["January", "February", "March"],
+  datasets: [{ data: [40, 20, 12] }],
+};
 </script>
 
 <template>
@@ -60,20 +72,21 @@ onMounted(() => {
       <div class="column">
         <h4 class="title is-4">¿Cuando?</h4>
       </div>
+
       <div class="column">
-      <date-picker
-        :value="selectedDate"
-        @change="this.$emit('dateSelected', $event)"
-        type="week"
-        format="DD/MM/YYYY"
-        :clearable="false"
-        :lang="{ formatLocale: { firstDayOfWeek: 1 } }"
-      ></date-picker>
+        <date-picker
+          :value="selectedDate"
+          @change="this.$emit('dateSelected', $event)"
+          type="week"
+          format="DD/MM/YYYY"
+          :clearable="false"
+          :lang="{ formatLocale: { firstDayOfWeek: 1 } }"
+        ></date-picker>
       </div>
       <div class="field has-addons column">
         <p class="control">
           <button class="button" @click="this.$emit('oneWeekBack')">
-              <i class="fas fa-angle-left"></i>
+            <i class="fas fa-angle-left"></i>
           </button>
         </p>
         <p class="control">
@@ -86,16 +99,23 @@ onMounted(() => {
         </p>
         <p class="control">
           <button class="button" @click="this.$emit('oneWeekForward')">
-              <i class="fas fa-angle-right"></i>
+            <i class="fas fa-angle-right"></i>
           </button>
         </p>
       </div>
     </div>
     <hr />
-    <h1>
-      selected region:
-      {{ selectedRegion == null ? "none" : selectedRegion.region }}
-    </h1>
+    <div>
+      <h6 class="title is-6">Region elegida:</h6>
+    </div>
+    <div>
+      <h4 class="title is-4">
+        {{ selectedRegion?.region || "ninguna" }}
+      </h4>
+    </div>
+    <div>
+      <bar-chart :chartData="chartData" />
+    </div>
   </div>
 </template>
 
@@ -112,7 +132,8 @@ div#menucontainer {
   text-align: center;
   padding: 2rem 1rem;
 }
-h4 {
+h4,
+h6 {
   color: white;
 }
 

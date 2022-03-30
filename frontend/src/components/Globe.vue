@@ -13,7 +13,6 @@ const props = defineProps({
 const emit = defineEmits(['regionSelected'])
 
 watch(() => props.selectedDate, () => {
-    console.log("watch called")
     addAllRegions()
   })
 
@@ -124,8 +123,8 @@ function addRegion(shapePoints, covidDataWeek) {
   let shape = new THREE.Shape(shapePoints);
   let outerRadius = 305.0;
 
-  let shapeGeometry = shape.extrude({
-    amount: outerRadius - earthRadius,
+  let shapeGeometry = new THREE.ExtrudeGeometry(shape, {
+    depth: outerRadius - earthRadius,
     bevelEnabled: false,
   });
 
@@ -168,7 +167,6 @@ function addRegion(shapePoints, covidDataWeek) {
 
 // Draw all regions
 function addAllRegions() {
-  console.log("adding all regions")
   if (rootObject) {
     scene.remove(rootObject);
   }
