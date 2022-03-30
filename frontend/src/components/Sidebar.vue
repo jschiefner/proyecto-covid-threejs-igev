@@ -1,6 +1,8 @@
 <script setup>
 import { computed, ref } from "@vue/reactivity";
 import "bulma/css/bulma.css";
+import "bulma-slider/dist/css/bulma-slider.min.css";
+import "bulma-switch/dist/css/bulma-switch.min.css";
 import moment from "moment";
 import { onMounted, watch } from "vue";
 import DatePicker from "vue-datepicker-next";
@@ -8,7 +10,8 @@ import "vue-datepicker-next/index.css";
 import BarChart from "./BarChart.vue";
 import { getFlagUrl } from "../helpers/flags.js";
 
-const chartWeeks = 7;
+const chartDisplayWeeks = ref(5);
+const casesChartDivide = ref(false);
 
 const props = defineProps({
   covidData: Object,
@@ -59,10 +62,10 @@ const extractAccessorsAndLabels = function () {
   const accessors = [];
   const labels = [];
   const referenceDate = moment(props.selectedDate).subtract(
-    chartWeeks,
+    chartDisplayWeeks.value,
     "weeks"
   );
-  for (let i = 0; i < chartWeeks; i++) {
+  for (let i = 0; i < chartDisplayWeeks.value; i++) {
     const date = referenceDate.add(1, "weeks");
     if (date.isDST()) date.add(1, "hour");
     accessors.push(date.toJSON());
@@ -107,7 +110,11 @@ const chartDataNewCases = computed({
 
     const data = accessors.map((date) => {
       let element = props.covidData[date][props.selectedNutsCode];
-      return element.count;
+      if (casesChartDivide.value) {
+        return parseFloat(element.count) / parseFloat(element.population);
+      } else {
+        return parseFloat(element.count);
+      }
     });
 
     return {
@@ -116,6 +123,15 @@ const chartDataNewCases = computed({
     };
   },
 });
+
+const sliderChanged = function (event) {
+  const value = parseInt(event.target.value);
+  chartDisplayWeeks.value = value;
+};
+
+const checkboxChanged = function () {
+  casesChartDivide.value = !casesChartDivide.value;
+};
 
 onMounted(() => {
   const dateInput = document.querySelector("input[name='date']");
@@ -182,7 +198,7 @@ onMounted(() => {
 
     <div v-if="isRegionSelected">
       <!-- Info Card Section -->
-      <div class="card">
+      <div class="card transparent-background">
         <div class="card-content">
           <div class="media">
             <div class="media-content">
@@ -239,8 +255,48 @@ onMounted(() => {
       </div>
 
       <div>
-        <bar-chart :v-if="drawCharts" :chartData="chartDataIncidence" />
-        <bar-chart :v-if="drawCharts" :chartData="chartDataNewCases" />
+        <bar-chart :v-if="isRegionSelected" :chartData="chartDataIncidence" />
+        <bar-chart
+          :v-if="isRegionSelected"
+          :chartData="chartDataNewCases"
+          :custom-tick-callback="
+            (value, index, ticks) => casesChartDivide ? `${(value * 100).toFixed(2)}%` : value
+          "
+        />
+      </div>
+      <div class="box transparent-background form-sidebar">
+        <div class="columns is-vcentered">
+          <div class="column">
+            <label class="label">Semanas mostradas</label>
+          </div>
+          <div class="column">
+            <input
+              class="slider is-fullwidth is-success is-circle"
+              step="1"
+              min="5"
+              max="14"
+              value="7"
+              type="range"
+              @input="sliderChanged"
+            />
+          </div>
+          <div class="column"></div>
+          <div class="column">
+            <label class="label">Dividir por población</label>
+          </div>
+          <div class="column">
+            <div class="field">
+              <input
+                id="switchRoundedSuccess"
+                type="checkbox"
+                name="switchRoundedSuccess"
+                class="switch is-rounded is-success"
+                @change="checkboxChanged"
+              />
+              <label for="switchRoundedSuccess"></label>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
     <h4 v-else class="title is-4">selecciona una región en el mapa</h4>
@@ -268,7 +324,11 @@ h6 {
   justify-content: center;
 }
 
-.card {
-  background-color: #ffffffaa;
+.transparent-background {
+  background-color: #ffffff99;
+}
+
+.form-sidebar {
+  /* text-align: left; */
 }
 </style>

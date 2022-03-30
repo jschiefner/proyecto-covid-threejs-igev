@@ -36,7 +36,7 @@ export default {
     },
     height: {
       type: Number,
-      default: 230,
+      default: 150,
     },
     cssClasses: {
       default: "",
@@ -53,8 +53,12 @@ export default {
     chartData: {
       type: Object,
     },
+    customTickCallback: {
+      type: Function,
+      default: undefined,
+    },
   },
-  data() {
+  data(props) {
     return {
       chartOptions: {
         responsive: true,
@@ -75,6 +79,7 @@ export default {
           y: {
             ticks: {
               color: "white",
+              callback: props.customTickCallback ? props.customTickCallback : undefined,
             },
             grid: {
               color: "#ffffff33",
