@@ -67,12 +67,18 @@ export default {
           x: {
             ticks: {
               color: "white",
-            }
+            },
+            grid: {
+              color: "#ffffff33",
+            },
           },
           y: {
             ticks: {
               color: "white",
-            }
+            },
+            grid: {
+              color: "#ffffff33",
+            },
           }
         },
       },

@@ -25,7 +25,7 @@ const emit = defineEmits([
 ]);
 
 function numberWithDots(x) {
-  return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 }
 
 const selectedRegion = computed({
@@ -33,16 +33,7 @@ const selectedRegion = computed({
     if (props.selectedNutsCode == "") return null;
     if (props.covidData.length == 0) return null;
 
-    const covidDataForDate = props.covidData[props.selectedDate.toJSON()];
-    if (!covidDataForDate) {
-      return {};
-    }
-    const covidDataForDateAndNutsCode =
-      covidDataForDate[props.selectedNutsCode];
-    if (!covidDataForDateAndNutsCode) {
-      return {};
-    }
-    return covidDataForDateAndNutsCode;
+    return props.covidData[props.selectedDate.toJSON()][props.selectedNutsCode];
   },
 });
 
@@ -64,6 +55,23 @@ const currentCovidElement = computed({
   },
 });
 
+const extractAccessorsAndLabels = function () {
+  const accessors = [];
+  const labels = [];
+  const referenceDate = moment(props.selectedDate).subtract(
+    chartWeeks,
+    "weeks"
+  );
+  for (let i = 0; i < chartWeeks; i++) {
+    const date = referenceDate.add(1, "weeks");
+    if (date.isDST()) date.add(1, "hour");
+    accessors.push(date.toJSON());
+    labels.push(date.format("DD/MM/YYYY"));
+  }
+
+  return { accessors, labels };
+};
+
 const chartDataIncidence = computed({
   get() {
     if (!isRegionSelected.value)
@@ -72,31 +80,40 @@ const chartDataIncidence = computed({
         datasets: [],
       };
 
-    // create array with labels + accessors for all past 5 dates or so
-    const accessors = [];
-    const labels = [];
-    const referenceDate = moment(props.selectedDate).subtract(
-      chartWeeks,
-      "weeks"
-    );
-    for (let i = 0; i < chartWeeks; i++) {
-      const date = referenceDate.add(1, "weeks");
-      if (date.isDST()) date.add(1, "hour");
-      accessors.push(date.toJSON());
-      labels.push(date.format("DD/MM/YYYY"));
-    }
+    const { accessors, labels } = extractAccessorsAndLabels();
 
-    // put all covid data with all dates + nuts codes in array for data, map incidence value
     const data = accessors.map((date) => {
-      let element = props.covidData[date];
-      console.log("extract with date: ", element);
-      element = element[props.selectedNutsCode];
-      console.log("extract with nuts code: ", element);
+      let element = props.covidData[date][props.selectedNutsCode];
       return parseFloat(element.incidence);
     });
 
     // return labels and data
-    return { labels, datasets: [{ data, backgroundColor: "#660000" }] };
+    return {
+      labels,
+      datasets: [{ data, backgroundColor: "#660000" }],
+    };
+  },
+});
+
+const chartDataNewCases = computed({
+  get() {
+    if (!isRegionSelected.value)
+      return {
+        labels: [],
+        datasets: [],
+      };
+
+    const { accessors, labels } = extractAccessorsAndLabels();
+
+    const data = accessors.map((date) => {
+      let element = props.covidData[date][props.selectedNutsCode];
+      return element.count;
+    });
+
+    return {
+      labels,
+      datasets: [{ data, backgroundColor: "#006600" }],
+    };
   },
 });
 
@@ -185,30 +202,45 @@ onMounted(() => {
           <nav class="level">
             <div class="level-item has-text-centered">
               <div>
-                <p class="heading"><i class="fa fa-virus-covid-slash"></i> Incidencia</p>
-                <p class="title">{{numberWithDots(parseInt(currentCovidElement.incidence))}}</p>
+                <p class="heading">
+                  <i class="fa fa-virus-covid-slash"></i> Incidencia
+                </p>
+                <p class="title">
+                  {{ numberWithDots(parseInt(currentCovidElement.incidence)) }}
+                </p>
               </div>
             </div>
             <div class="level-item has-text-centered">
               <div>
-                <p class="heading"><i class="fa fa-virus-covid"></i> Nuevos Casos</p>
-                <p class="title">{{numberWithDots(currentCovidElement.count)}}</p>
+                <p class="heading">
+                  <i class="fa fa-virus-covid"></i> Nuevos Casos
+                </p>
+                <p class="title">
+                  {{ numberWithDots(currentCovidElement.count) }}
+                </p>
               </div>
             </div>
             <div class="level-item has-text-centered">
               <div>
-                <p class="heading"><i class="fa fa-people-group"></i> Population</p>
-                <p class="title">{{numberWithDots(currentCovidElement.population)}}</p>
+                <p class="heading">
+                  <i class="fa fa-people-group"></i> Population
+                </p>
+                <p class="title">
+                  {{ numberWithDots(currentCovidElement.population) }}
+                </p>
               </div>
             </div>
           </nav>
-          <p class="heading is-italic">Datos para la semana del {{moment(props.selectedDate).format('DD/MM/YYYY')}}</p>
+          <p class="heading is-italic">
+            Datos para la semana del
+            {{ moment(props.selectedDate).format("DD/MM/YYYY") }}
+          </p>
         </div>
       </div>
 
       <div>
         <bar-chart :v-if="drawCharts" :chartData="chartDataIncidence" />
-        <bar-chart :v-if="drawCharts" :chartData="chartDataIncidence" />
+        <bar-chart :v-if="drawCharts" :chartData="chartDataNewCases" />
       </div>
     </div>
     <h4 v-else class="title is-4">selecciona una región en el mapa</h4>
