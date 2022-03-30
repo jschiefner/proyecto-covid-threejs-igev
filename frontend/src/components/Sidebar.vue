@@ -6,6 +6,7 @@ import { onMounted, watch } from "vue";
 import DatePicker from "vue-datepicker-next";
 import "vue-datepicker-next/index.css";
 import BarChart from "./BarChart.vue";
+import { getFlagUrl } from "../helpers/flags.js";
 
 const chartWeeks = 5;
 
@@ -22,6 +23,10 @@ const emit = defineEmits([
   "oneWeekForward",
   "jumpCurrentWeek",
 ]);
+
+function numberWithDots(x) {
+  return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
 
 const selectedRegion = computed({
   get() {
@@ -41,44 +46,57 @@ const selectedRegion = computed({
   },
 });
 
-const drawCharts = computed({
+const isRegionSelected = computed({
   get() {
-    if (!props.selectedNutsCode) return false
-    if (props.covidData == null || Object.keys(props.covidData).length == 0) return false
+    if (!props.selectedNutsCode) return false;
+    if (props.covidData == null || Object.keys(props.covidData).length == 0)
+      return false;
 
     return true;
-  }
-})
+  },
+});
+
+const currentCovidElement = computed({
+  get() {
+    if (!isRegionSelected.value) return null;
+
+    return props.covidData[props.selectedDate.toJSON()][props.selectedNutsCode];
+  },
+});
 
 const chartDataIncidence = computed({
   get() {
-    if (!drawCharts.value) return {
-      labels: [],
-      datasets: [],
-    }
+    if (!isRegionSelected.value)
+      return {
+        labels: [],
+        datasets: [],
+      };
 
     // create array with labels + accessors for all past 5 dates or so
     const accessors = [];
-    const labels = []
-    const referenceDate = moment(props.selectedDate).subtract(chartWeeks, "weeks");
+    const labels = [];
+    const referenceDate = moment(props.selectedDate).subtract(
+      chartWeeks,
+      "weeks"
+    );
     for (let i = 0; i < chartWeeks; i++) {
-      const date = referenceDate.add(1, "weeks")
+      const date = referenceDate.add(1, "weeks");
       if (date.isDST()) date.add(1, "hour");
       accessors.push(date.toJSON());
-      labels.push(date.format('DD/MM/YYYY'));
+      labels.push(date.format("DD/MM/YYYY"));
     }
 
     // put all covid data with all dates + nuts codes in array for data, map incidence value
     const data = accessors.map((date) => {
-      let element = props.covidData[date]
-      console.log("extract with date: ", element)
-      element = element[props.selectedNutsCode]
-      console.log("extract with nuts code: ", element)
-      return parseFloat(element.incidence)
-    })
+      let element = props.covidData[date];
+      console.log("extract with date: ", element);
+      element = element[props.selectedNutsCode];
+      console.log("extract with nuts code: ", element);
+      return parseFloat(element.incidence);
+    });
 
     // return labels and data
-    return {labels, datasets: [{data, backgroundColor: "#660000"}]};
+    return { labels, datasets: [{ data, backgroundColor: "#660000" }] };
   },
 });
 
@@ -91,6 +109,7 @@ onMounted(() => {
 
 <template>
   <div id="menucontainer" class="container">
+    <!-- Search section -->
     <div class="columns is-vcentered">
       <div class="column">
         <h4 class="title is-4">¿A Donde quieres Viajar?</h4>
@@ -108,11 +127,11 @@ onMounted(() => {
       </div>
     </div>
     <hr />
+    <!-- Date picker section -->
     <div class="columns is-vcentered">
       <div class="column">
         <h4 class="title is-4">¿Cuando?</h4>
       </div>
-
       <div class="column">
         <date-picker
           :value="selectedDate"
@@ -145,17 +164,55 @@ onMounted(() => {
       </div>
     </div>
     <hr />
-    <div>
-      <h6 class="title is-6">Region elegida:</h6>
+
+    <div v-if="isRegionSelected">
+      <!-- Info Card Section -->
+      <div class="card">
+        <div class="card-content">
+          <div class="media">
+            <div class="media-content">
+              <p class="title is-4">{{ currentCovidElement.region }}</p>
+              <p class="subtitle is-6">{{ currentCovidElement.country }}</p>
+            </div>
+            <div class="media-right">
+              <figure class="image is-48x48">
+                <img
+                  :src="getFlagUrl(currentCovidElement.country)"
+                  alt="Placeholder image"
+                />
+              </figure>
+            </div>
+          </div>
+
+          <nav class="level">
+            <div class="level-item has-text-centered">
+              <div>
+                <p class="heading"><i class="fa fa-virus-covid-slash"></i> Incidencia</p>
+                <p class="title">{{numberWithDots(parseInt(currentCovidElement.incidence))}}</p>
+              </div>
+            </div>
+            <div class="level-item has-text-centered">
+              <div>
+                <p class="heading"><i class="fa fa-virus-covid"></i> Nuevos Casos</p>
+                <p class="title">{{numberWithDots(currentCovidElement.count)}}</p>
+              </div>
+            </div>
+            <div class="level-item has-text-centered">
+              <div>
+                <p class="heading"><i class="fa fa-people-group"></i> Population</p>
+                <p class="title">{{numberWithDots(currentCovidElement.population)}}</p>
+              </div>
+            </div>
+          </nav>
+          <p class="heading is-italic">Datos para la semana del {{moment(props.selectedDate).format('DD/MM/YYYY')}}</p>
+        </div>
+      </div>
+
+      <div>
+        <bar-chart :v-if="drawCharts" :chartData="chartDataIncidence" />
+      </div>
     </div>
-    <div>
-      <h4 class="title is-4">
-        {{ selectedRegion?.region || "ninguna" }}
-      </h4>
-    </div>
-    <div>
-      <bar-chart :v-if="drawCharts" :chartData="chartDataIncidence" />
-    </div>
+    <h4 v-else class="title is-4">selecciona una región en el mapa</h4>
   </div>
 </template>
 
