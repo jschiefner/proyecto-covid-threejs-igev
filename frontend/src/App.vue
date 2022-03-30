@@ -13,14 +13,15 @@ moment.updateLocale("en", { week: {
 }});
 
 const covidData = ref({});
-const selectedNutsCode = ref(null)
-const selectedDate = ref(new Date()) // TODO: determine last date somehow?
+const selectedNutsCode = ref(null) // TODO: remove hardcoded value
+const selectedDate = ref(new Date('2022-03-14T00:00:00.000Z')) // TODO: determine last date somehow?
 
 const init = async function() {
   covidData.value = await loadJsonFile(
     "../src/assets/sample-covid-data-2022-13.json"
   );
-  selectedDate.value = new Date('2022-03-07T00:00:00.000Z')
+  console.log("fetched covid data")
+  selectedDate.value = new Date('2022-03-14T00:00:00.000Z') // TODO: improve this so i dont have to set this here again in order to render after awaiting this
 }
 
 const search = function() {

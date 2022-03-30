@@ -1,16 +1,20 @@
 <script setup>
 import { computed, ref } from "@vue/reactivity";
 import "bulma/css/bulma.css";
+import moment from "moment";
 import { onMounted, watch } from "vue";
 import DatePicker from "vue-datepicker-next";
 import "vue-datepicker-next/index.css";
 import BarChart from "./BarChart.vue";
+
+const chartWeeks = 5;
 
 const props = defineProps({
   covidData: Object,
   selectedNutsCode: String,
   selectedDate: Date,
 });
+
 const emit = defineEmits([
   "search",
   "dateSelected",
@@ -37,16 +41,52 @@ const selectedRegion = computed({
   },
 });
 
+const drawCharts = computed({
+  get() {
+    if (!props.selectedNutsCode) return false
+    if (props.covidData == null || Object.keys(props.covidData).length == 0) return false
+
+    return true;
+  }
+})
+
+const chartDataIncidence = computed({
+  get() {
+    if (!drawCharts.value) return {
+      labels: [],
+      datasets: [],
+    }
+
+    // create array with labels + accessors for all past 5 dates or so
+    const accessors = [];
+    const labels = []
+    const referenceDate = moment(props.selectedDate).subtract(chartWeeks, "weeks");
+    for (let i = 0; i < chartWeeks; i++) {
+      const date = referenceDate.add(1, "weeks")
+      if (date.isDST()) date.add(1, "hour");
+      accessors.push(date.toJSON());
+      labels.push(date.format('DD/MM/YYYY'));
+    }
+
+    // put all covid data with all dates + nuts codes in array for data, map incidence value
+    const data = accessors.map((date) => {
+      let element = props.covidData[date]
+      console.log("extract with date: ", element)
+      element = element[props.selectedNutsCode]
+      console.log("extract with nuts code: ", element)
+      return parseFloat(element.incidence)
+    })
+
+    // return labels and data
+    return {labels, datasets: [{data, backgroundColor: "#660000"}]};
+  },
+});
+
 onMounted(() => {
   const dateInput = document.querySelector("input[name='date']");
   dateInput.classList.add("input");
   dateInput.classList.remove("mx-input");
 });
-
-const chartData = {
-  labels: ["January", "February", "March"],
-  datasets: [{ data: [40, 20, 12] }],
-};
 </script>
 
 <template>
@@ -114,7 +154,7 @@ const chartData = {
       </h4>
     </div>
     <div>
-      <bar-chart :chartData="chartData" />
+      <bar-chart :v-if="drawCharts" :chartData="chartDataIncidence" />
     </div>
   </div>
 </template>
