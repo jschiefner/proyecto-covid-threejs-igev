@@ -8,7 +8,7 @@ import "vue-datepicker-next/index.css";
 import BarChart from "./BarChart.vue";
 import { getFlagUrl } from "../helpers/flags.js";
 
-const chartWeeks = 5;
+const chartWeeks = 7;
 
 const props = defineProps({
   covidData: Object,
@@ -126,7 +126,6 @@ onMounted(() => {
         </div>
       </div>
     </div>
-    <hr />
     <!-- Date picker section -->
     <div class="columns is-vcentered">
       <div class="column">
@@ -163,7 +162,6 @@ onMounted(() => {
         </p>
       </div>
     </div>
-    <hr />
 
     <div v-if="isRegionSelected">
       <!-- Info Card Section -->
@@ -210,6 +208,7 @@ onMounted(() => {
 
       <div>
         <bar-chart :v-if="drawCharts" :chartData="chartDataIncidence" />
+        <bar-chart :v-if="drawCharts" :chartData="chartDataIncidence" />
       </div>
     </div>
     <h4 v-else class="title is-4">selecciona una región en el mapa</h4>
@@ -219,8 +218,7 @@ onMounted(() => {
 <style scoped>
 div#menucontainer {
   position: absolute;
-  /* top: 0px;
-    left: 0px; */
+  overflow: scroll;
   height: 100%;
   width: 33%;
   background: #ffffff11;
@@ -236,5 +234,9 @@ h6 {
 
 .field {
   justify-content: center;
+}
+
+.card {
+  background-color: #ffffffaa;
 }
 </style>
