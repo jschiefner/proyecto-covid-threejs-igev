@@ -2,33 +2,30 @@
 </script>
 
 <template>
-  <div class="outer">
-    <div class="middle">
-      <div class="inner">
-        <slot />
+  <div class="">
+    <div class="columns is-centered">
+      <div class="vertical-center">
+        <div class="column">
+          <slot />
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-.outer {
-  display: table;
+.container {
+  text-align: center;
+  height: 90%;
+  position: relative;
+}
+
+.vertical-center {
+  text-align: center;
+  margin: 0;
   position: absolute;
-  top: 0;
-  left: 0;
-  height: 100%;
-  width: 100%;
-}
-
-.middle {
-  display: table-cell;
-  vertical-align: middle;
-}
-
-.inner {
-  margin-left: auto;
-  margin-right: auto;
-  width: 400px;
+  top: 50%;
+  -ms-transform: translateY(-50%);
+  transform: translateY(-50%);
 }
 </style>

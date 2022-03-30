@@ -1,24 +1,19 @@
 <script setup>
-import { nextTick, onMounted, watch } from "@vue/runtime-core"
-import * as THREE from "three"
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js"
-import { VueElement, ref } from "vue"
-import { loadJsonFile } from "../helpers/fileLoader.js"
+import { nextTick, onMounted, watch } from "@vue/runtime-core";
+import * as THREE from "three";
+import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+import { VueElement, ref } from "vue";
 
 const props = defineProps({
+  geoData: Object,
   covidData: Object,
   selectedDate: Date,
-})
+});
 
-const emit = defineEmits(['regionSelected'])
-
-watch(() => props.selectedDate, () => {
-    addAllRegions()
-  })
+const emit = defineEmits(["regionSelected"]);
 
 // Create loaders and globally usable variables for data
 const texLoader = new THREE.TextureLoader();
-let geoData, covidData;
 
 let tooltipElement;
 let tooltipString = ref("");
@@ -51,7 +46,7 @@ camera.position.set(370, 370, -15);
 let intersectedObject;
 var rayCaster = new THREE.Raycaster();
 rayCaster.layers.set(objectLayer);
-let mouse = new THREE.Vector2(-1,-1); // vector to store mouse position
+let mouse = new THREE.Vector2(-1, -1); // vector to store mouse position
 
 // Create and init lights
 let worldLight = new THREE.DirectionalLight(0xffffff);
@@ -82,10 +77,10 @@ let ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
 scene.add(ambientLight);
 
 // Create globe mesh
-let mapMaterial = texLoader.load("../src/assets/8081_earthmap10k.jpeg");
 let earthRadius = 300;
 let segments = 128;
 let rings = 128;
+let mapMaterial = texLoader.load("../src/assets/8081_earthmap10k.jpeg");
 let geometry = new THREE.SphereGeometry(earthRadius, segments, rings);
 mapMaterial.wrapS = THREE.RepeatWrapping;
 mapMaterial.wrapT = THREE.RepeatWrapping;
@@ -103,19 +98,24 @@ scene.add(mesh);
 function createPathStrings(filename) {
   const fileType = ".png";
   const sides = ["ft", "bk", "up", "dn", "rt", "lf"];
-  const pathStings = sides.map(side => {
+  const pathStings = sides.map((side) => {
     return filename + "_" + side + fileType;
   });
   return pathStings;
 }
 
 function createMaterialArray(filename) {
-  const skyboxImagepaths = createPathStrings(filename)
-  const materialArray = skyboxImagepaths.map(image => {
-    let texture = texLoader.load(image)
-    return new THREE.MeshBasicMaterial({ map: texture, side: THREE.BackSide, transparent: true, opacity: 0.5 })
-  })
-  return materialArray
+  const skyboxImagepaths = createPathStrings(filename);
+  const materialArray = skyboxImagepaths.map((image) => {
+    let texture = texLoader.load(image);
+    return new THREE.MeshBasicMaterial({
+      map: texture,
+      side: THREE.BackSide,
+      transparent: true,
+      opacity: 0.5,
+    });
+  });
+  return materialArray;
 }
 
 // Draw a single region
@@ -174,17 +174,17 @@ function addAllRegions() {
   rootObject = new THREE.Object3D();
   scene.add(rootObject);
 
-  geoData.features.forEach(function(region) {
+  props.geoData.features.forEach(function (region) {
     const regionNutsCode = region.properties.NUTS_ID;
     if (props.covidData == null || Object.keys(props.covidData) == 0) {
-      console.log("early return", props.covidData == null)
+      console.log("early return", props.covidData == null);
       return;
     }
-    const covidDataForDate = props.covidData[props.selectedDate.toJSON()]
+    const covidDataForDate = props.covidData[props.selectedDate.toJSON()];
     if (!covidDataForDate) {
-      debugger
+      debugger;
     }
-    const covidDataWeek = covidDataForDate[regionNutsCode]
+    const covidDataWeek = covidDataForDate[regionNutsCode];
 
     if (!covidDataWeek) {
       // could not covid data but a region is available
@@ -230,12 +230,12 @@ onMounted(async () => {
   controls.enableDamping = true; // an animation loop is required when either damping or auto-rotation are enabled
   controls.dampingFactor = 0.05;
   controls.screenSpacePanning = true;
-  controls.zoomSpeed = 0.2
-  controls.minDistance = 350
-  controls.maxDistance = 2000
+  controls.zoomSpeed = 0.2;
+  controls.minDistance = 350;
+  controls.maxDistance = 2000;
 
-  let container = document.querySelector('#container')
-  container.style.right = `${offset}px`
+  let container = document.querySelector("#container");
+  container.style.right = `${offset}px`;
 
   // Setup skybox
   const materialArray = createMaterialArray("../src/assets/skybox/corona");
@@ -270,9 +270,13 @@ onMounted(async () => {
     renderer.setSize(sizes.width, sizes.height);
   });
 
-  canvas.addEventListener('click', () => {
-    emit('regionSelected', intersectedObject?.name)
-  }, false)
+  canvas.addEventListener(
+    "click",
+    () => {
+      emit("regionSelected", intersectedObject?.name);
+    },
+    false
+  );
 
   const tick = () => {
     renderer.autoClear = true;
@@ -307,7 +311,8 @@ onMounted(async () => {
         // update text, if it has a "name" field. This will contain the nuts code of the intersected region
         const name = intersects[0].object.name;
         if (name) {
-          var covidDataElement = props.covidData[props.selectedDate.toJSON()][name]
+          var covidDataElement =
+            props.covidData[props.selectedDate.toJSON()][name];
           tooltipString.value = `${covidDataElement.region}: ${covidDataElement.incidence}`;
         }
       } // else: it is the same object that is already intersected, so dont do anything
@@ -325,8 +330,7 @@ onMounted(async () => {
     window.requestAnimationFrame(tick); // request a new animation frame
   };
 
-  geoData = await loadJsonFile("../src/assets/NUTS_RG_60M_2021_4326.geojson");
-
+  watch(() => props.selectedDate, addAllRegions, { immediate: true });
   tick();
 });
 </script>
