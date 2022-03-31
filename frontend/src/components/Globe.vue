@@ -10,6 +10,7 @@ const props = defineProps({
   geoData: Object,
   covidData: Object,
   selectedDate: Date,
+  selectedNutsCode: String,
   textures: Object,
 });
 
@@ -20,6 +21,8 @@ let tooltipElement;
 const tooltipString = ref("");
 const cameraTargetPosition = new THREE.Vector3(370, 370, -15);
 const cameraInitialPosition = new THREE.Vector3(1000, 500, 2000);
+const selectedColor = 0x0588e6;
+const hoverColor = 0x6dc1fd;
 const regionMeshData = {};
 // structure of this variable:
 //   ATT2: [
@@ -63,10 +66,10 @@ camera.position.set(
 );
 
 // Prepare Raycaster
-let intersectedObject;
 var rayCaster = new THREE.Raycaster();
 rayCaster.layers.set(objectLayer);
 let mouse = new THREE.Vector2(-1, -1); // vector to store mouse position
+let hoveredNutsCode = null;
 
 // Create and init lights
 let worldLight = new THREE.DirectionalLight(0xffffff);
@@ -113,11 +116,14 @@ mesh.layers.set(worldLayer);
 scene.add(mesh);
 
 function createShapeGeometry(shapePoints, extrusion) {
-  scene.add(rootObject)
-  const shapeGeometry = new THREE.ExtrudeGeometry(new THREE.Shape(shapePoints), {
-    depth: 5,
-    bevelEnabled: false,
-  })
+  scene.add(rootObject);
+  const shapeGeometry = new THREE.ExtrudeGeometry(
+    new THREE.Shape(shapePoints),
+    {
+      depth: 5,
+      bevelEnabled: false,
+    }
+  );
 
   shapeGeometry.vertices.forEach((vertex, index) => {
     let radius;
@@ -186,14 +192,14 @@ function createRegions() {
       const shapeMaterial = new THREE.MeshPhongMaterial({
         color: 0xffffff, // TODO: use color scheme
         side: THREE.DoubleSide,
-      })
+      });
       const mesh = new THREE.Mesh(shapeGeometry, shapeMaterial);
       mesh.layers.set(objectLayer);
       mesh.name = regionNutsCode;
-      rootObject.add(mesh)
+      rootObject.add(mesh);
 
       meshes.push(mesh);
-    })
+    });
 
     // Add to regionMeshData
     const output = [];
@@ -201,7 +207,7 @@ function createRegions() {
       output.push({
         mesh: meshes[index],
         shape: shapePoints,
-      })
+      });
     });
 
     regionMeshData[regionNutsCode] = output;
@@ -210,20 +216,24 @@ function createRegions() {
 
 function updateRegions(animationTime) {
   for (const nuts in regionMeshData) {
-    regionMeshData[nuts].forEach(({mesh, shape}) => {
+    regionMeshData[nuts].forEach(({ mesh, shape }) => {
       const covidDataWeek = props.covidData[props.selectedDate.toJSON()][nuts];
-      const color = new THREE.Color(visualization.colorByIncidence(covidDataWeek.incidence));
-      const extrusion = visualization.extrusion(covidDataWeek.incidence)
+      const color = new THREE.Color(
+        visualization.colorByIncidence(covidDataWeek.incidence)
+      );
+      const extrusion = visualization.extrusion(covidDataWeek.incidence);
       const shapeGeometry = createShapeGeometry(shape, extrusion);
 
-      // animate color
-      new TWEEN.Tween(mesh.material.color)
-        .to(color, animationTime)
-        .easing(TWEEN.Easing.Quadratic.InOut)
-        .onUpdate(() => {
-          mesh.geometry.verticesNeedUpdate = true;
-        })
-        .start()
+      // animate color if necessary
+      if (nuts != props.selectedNutsCode) {
+        new TWEEN.Tween(mesh.material.color)
+          .to(color, animationTime)
+          .easing(TWEEN.Easing.Quadratic.InOut)
+          .onUpdate(() => {
+            mesh.geometry.verticesNeedUpdate = true;
+          })
+          .start();
+      }
 
       // animate vertices
       mesh.geometry.vertices.forEach((vertex, index) => {
@@ -233,10 +243,40 @@ function updateRegions(animationTime) {
           .onUpdate(() => {
             mesh.geometry.verticesNeedUpdate = true;
           })
-          .start()
-      })
+          .start();
+      });
     });
   }
+}
+
+function onNutsCodeSelected(newValue, oldValue) {
+  if (oldValue) {
+    // reset color on previously selected mesh
+    const covidDataWeek =
+      props.covidData[props.selectedDate.toJSON()][oldValue];
+    const color = new THREE.Color(
+      visualization.colorByIncidence(covidDataWeek.incidence)
+    );
+    const selectedRegion = regionMeshData[oldValue];
+    selectedRegion.forEach(({ mesh, shape }) => {
+      mesh.material.color.set(color);
+    });
+  }
+
+  if (newValue) {
+    // set color on newly selected mesh
+    const selectedRegion = regionMeshData[newValue];
+    selectedRegion.forEach(({ mesh, shape }) => {
+      mesh.material.color.setHex(selectedColor);
+    });
+  }
+}
+
+// TODO: prettify tooltip
+function updateTooltip() {
+  const covidDataWeek =
+    props.covidData[props.selectedDate.toJSON()][hoveredNutsCode];
+  tooltipString.value = `${covidDataWeek.region}: ${covidDataWeek.incidence}`;
 }
 
 onMounted(async () => {
@@ -294,10 +334,23 @@ onMounted(async () => {
   canvas.addEventListener(
     "click",
     () => {
-      emit("regionSelected", intersectedObject?.name);
+      emit("regionSelected", hoveredNutsCode);
     },
     false
   );
+
+  function setRegionColor(nuts, color) {
+    if (!color) {
+      const covidDataWeek = props.covidData[props.selectedDate.toJSON()][nuts];
+      color = new THREE.Color(
+        visualization.colorByIncidence(covidDataWeek.incidence)
+      );
+    }
+    const selectedRegion = regionMeshData[nuts];
+    selectedRegion.forEach(({ mesh }) => {
+      mesh.material.color.set(color);
+    });
+  }
 
   const tick = () => {
     renderer.autoClear = true;
@@ -314,36 +367,40 @@ onMounted(async () => {
 
     if (intersects.length > 0) {
       // found an intersecting object
-      if (intersects[0].object != intersectedObject) {
+      if (intersects[0].object.name != hoveredNutsCode) {
         // if the closest object intersected is not the currently stored intersection object
         tooltipElement.classList.remove("hidden");
 
         // restore previous intersection object (if it exists) to its original color
-        if (intersectedObject)
-          intersectedObject.material.color.setHex(intersectedObject.currentHex);
-        // store reference to closest object as current intersection object
-        intersectedObject = intersects[0].object;
-        // store color of closest object (for later restoration)
-        intersectedObject.currentHex =
-          intersectedObject.material.color.getHex();
-        // set a new color for closest object
-        intersectedObject.material.color.setHex(0x6dc1fd);
-
-        // update text, if it has a "name" field. This will contain the nuts code of the intersected region
-        const name = intersects[0].object.name;
-        if (name) {
-          var covidDataElement =
-            props.covidData[props.selectedDate.toJSON()][name];
-          tooltipString.value = `${covidDataElement.region}: ${covidDataElement.incidence}`;
+        if (hoveredNutsCode && hoveredNutsCode != props.selectedNutsCode) {
+          setRegionColor(hoveredNutsCode);
         }
+
+        // store reference to closest object as current intersection object
+        hoveredNutsCode = intersects[0].object.name;
+        setRegionColor(hoveredNutsCode, hoverColor);
+
+        if (
+          props.selectedNutsCode &&
+          props.selectedNutsCode != hoveredNutsCode
+        ) {
+          setRegionColor(props.selectedNutsCode, selectedColor);
+        }
+
+        // update tooltip
+        updateTooltip();
       } // else: it is the same object that is already intersected, so dont do anything
     } else {
       // restore previous intersection object (if it exists) to its original color
-      if (intersectedObject)
-        intersectedObject.material.color.setHex(intersectedObject.currentHex);
+      if (hoveredNutsCode) {
+        setRegionColor(hoveredNutsCode);
+      }
+      if (props.selectedNutsCode) {
+        setRegionColor(props.selectedNutsCode, selectedColor);
+      }
 
       // remove previous intersection object reference
-      intersectedObject = null;
+      hoveredNutsCode = null;
       tooltipElement.classList.add("hidden");
     }
 
@@ -366,7 +423,11 @@ onMounted(async () => {
     { immediate: true }
   );
 
-  watch(() => props.selectedDate, () => updateRegions(300));
+  watch(
+    () => props.selectedDate,
+    () => updateRegions(300)
+  );
+  watch(() => props.selectedNutsCode, onNutsCodeSelected);
   tick();
 });
 </script>

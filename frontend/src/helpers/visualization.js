@@ -43,8 +43,7 @@ function componentToHex(c) {
 }
 
 function rgbToHex({r, g, b}) {
-  const color = "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
-  return color.toUpperCase();
+  return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
 }
 
 const colorByIncidence = function (incidence) {

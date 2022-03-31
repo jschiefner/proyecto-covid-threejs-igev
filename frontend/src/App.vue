@@ -99,6 +99,7 @@ const jumpCurrentWeek = function () {
         :geo-data="geoData"
         :covid-data="covidData"
         :selected-date="selectedDate"
+        :selected-nuts-code="selectedNutsCode"
         :textures="textures"
         @region-selected="regionSelected"
       />
