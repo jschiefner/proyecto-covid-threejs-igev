@@ -19,6 +19,7 @@ let tooltipElement;
 const tooltipString = ref("");
 const cameraTargetPosition = new THREE.Vector3(370, 370, -15);
 const cameraInitialPosition = new THREE.Vector3(1000, 500, 2000);
+const regionMeshData = {};
 
 const offset = 700; // for the globes offset to the right, TODO: change based on window width
 let rootObject = new THREE.Object3D(); // root object for the extruded elements
@@ -100,103 +101,115 @@ let mesh = new THREE.Mesh(geometry, material);
 mesh.layers.set(worldLayer);
 scene.add(mesh);
 
-// Draw a single region
-function addRegion(shapePoints, covidDataWeek) {
-  let shape = new THREE.Shape(shapePoints);
-  let outerRadius = 305.0;
-
-  let shapeGeometry = new THREE.ExtrudeGeometry(shape, {
-    depth: outerRadius - earthRadius,
+function createShapeGeometry(shapePoints, extrusion) {
+  scene.add(rootObject)
+  const shapeGeometry = new THREE.ExtrudeGeometry(new THREE.Shape(shapePoints), {
+    depth: 5,
     bevelEnabled: false,
-  });
+  })
 
-  // ! Calculate how tall a region should be drawn
-  let extrusion = covidDataWeek.incidence / 500;
-
-  shapeGeometry.vertices.forEach(function (vert, index) {
+  shapeGeometry.vertices.forEach((vertex, index) => {
     let radius;
     if (index < shapeGeometry.vertices.length / 2) {
       radius = earthRadius;
     } else {
       radius = earthRadius + extrusion;
     }
-    let phi = ((90.0 - vert.y) * Math.PI) / 180.0;
-    let theta = ((360.0 - vert.x) * Math.PI) / 180.0;
-    vert.x = radius * Math.sin(phi) * Math.cos(theta);
-    vert.y = radius * Math.cos(phi);
-    vert.z = radius * Math.sin(phi) * Math.sin(theta);
+    let phi = ((90.0 - vertex.y) * Math.PI) / 180.0;
+    let theta = ((360.0 - vertex.x) * Math.PI) / 180.0;
+    vertex.x = radius * Math.sin(phi) * Math.cos(theta);
+    vertex.y = radius * Math.cos(phi);
+    vertex.z = radius * Math.sin(phi) * Math.sin(theta);
   });
 
-  // ! Calculate the Color for a region here, incidence assumed to be between 0 and 5000
-  const maxIncidence = 5000;
-  let incidence = parseFloat(covidDataWeek.incidence);
-  incidence = incidence > maxIncidence ? maxIncidence : incidence;
-  let value = (255 - Math.round((incidence / maxIncidence) * 255))
-    .toString(16)
-    .padStart(2, "0");
-  let color = new THREE.Color(`#${value}${value}${value}`);
-  // color.setHSL(Math.random(), 0.8, 0.8);
-
-  let shapeMaterial = new THREE.MeshPhongMaterial({
-    color: color,
-    side: THREE.DoubleSide,
-  });
-  let shapeMesh = new THREE.Mesh(shapeGeometry, shapeMaterial);
-  shapeMesh.layers.set(objectLayer);
-  shapeMesh.name = covidDataWeek.nuts;
-  rootObject.add(shapeMesh);
+  return shapeGeometry;
 }
 
-// Draw all regions
-function addAllRegions() {
-  if (rootObject) {
-    scene.remove(rootObject);
-  }
-
-  rootObject = new THREE.Object3D();
-  scene.add(rootObject);
-
-  props.geoData.features.forEach(function (region) {
+function createRegions() {
+  let regions = props.geoData.features;
+  regions.forEach((region) => {
     const regionNutsCode = region.properties.NUTS_ID;
-    if (props.covidData == null || Object.keys(props.covidData) == 0) {
-      console.log("early return", props.covidData == null);
-      return;
-    }
-    const covidDataForDate = props.covidData[props.selectedDate.toJSON()];
-    if (!covidDataForDate) {
-      debugger;
-    }
-    const covidDataWeek = covidDataForDate[regionNutsCode];
 
-    if (!covidDataWeek) {
-      // could not covid data but a region is available
-      return;
-    }
-
+    //* Create the region 2d shapes
+    //* array including all 2d unwarped shapes for a region [[{x,y}, {x,y}, ...], [{x,y}, {x,y}, ...], ...]
+    // TODO: new THREE.Shape() instead of shapepoints as array?
+    const shapePointsArray = [];
     if (region.geometry.coordinates.length === 1) {
-      let shapePoints = [];
-      region.geometry.coordinates[0].forEach(function (points) {
-        shapePoints.push(new THREE.Vector2(points[0], points[1]));
+      // Single Polygon
+      const shapePoints = region.geometry.coordinates[0].map((point) => {
+        return new THREE.Vector2(point[0], point[1]);
       });
-      addRegion(shapePoints, covidDataWeek);
+      shapePointsArray.push(shapePoints);
     } else {
-      region.geometry.coordinates.forEach(function (coordSet) {
-        if (coordSet.length == 1) {
-          let shapePoints = [];
-          coordSet[0].forEach(function (points) {
-            shapePoints.push(new THREE.Vector2(points[0], points[1]));
+      // Multipolygon
+      region.geometry.coordinates.forEach((coordinateSet) => {
+        // TODO: maybe this can be simplified with the new structure?
+        if (coordinateSet.length === 1) {
+          // nested one level deeper
+          const shapePoints = coordinateSet[0].map((point) => {
+            return new THREE.Vector2(point[0], point[1]);
           });
-          addRegion(shapePoints, covidDataWeek);
+          shapePointsArray.push(shapePoints);
         } else {
-          let shapePoints = [];
-          coordSet.forEach(function (points) {
-            shapePoints.push(new THREE.Vector2(points[0], points[1]));
+          // nested on the same level
+          const shapePoints = coordinateSet.map((point) => {
+            return new THREE.Vector2(point[0], point[1]);
           });
-          addRegion(shapePoints, covidDataWeek);
+          shapePointsArray.push(shapePoints);
         }
       });
     }
+
+    //* Create the region mesh objects
+    //* add region recevied an object of shapepoints, so an inner array [{x,y}, {x,y}, ...]
+    const meshes = [];
+
+    shapePointsArray.forEach((shapePoints) => {
+      // with one shapePoints array [{x,y}, {x,y}, ...] create a new mesh
+      let extrusion = 10; // ? adjust this value maybe? just an original extrusion from which can be animated
+
+      // TODO: implement this
+      const shapeGeometry = createShapeGeometry(shapePoints, extrusion);
+
+      // TODO: enough to do this once on the top probably (allthough not sure with the color since that needs to be different)
+      const shapeMaterial = new THREE.MeshPhongMaterial({
+        color: 0x888888, // TODO: use color scheme
+        side: THREE.DoubleSide,
+      })
+      const mesh = new THREE.Mesh(shapeGeometry, shapeMaterial);
+      mesh.layers.set(objectLayer);
+      mesh.name = regionNutsCode;
+      rootObject.add(mesh)
+
+      meshes.push(mesh);
+    })
+
+    // Add to regionMeshData
+    const output = [];
+    shapePointsArray.forEach((shapePoints, index) => {
+      output.push({
+        mesh: meshes[index],
+        shape: shapePoints,
+      })
+    });
+
+    regionMeshData[regionNutsCode] = output;
   });
+
+  console.log(regionMeshData)
+
+  // desired output = {
+  //   ATT2: [
+  //     {
+  //       mesh: mesh1,
+  //       shape: [{x,y}, {x,y}, ...],
+  //     },
+  //     {
+  //       mesh: mesh2,
+  //       shape: [{x,y}, {x,y}, ...],
+  //     },
+  //   ],
+  // };
 }
 
 onMounted(async () => {
@@ -315,7 +328,7 @@ onMounted(async () => {
   watch(
     props.covidData,
     () => {
-      addAllRegions();
+      createRegions();
       new TWEEN.Tween(camera.position)
         .to(cameraTargetPosition, 3000)
         .easing(TWEEN.Easing.Cubic.Out)
@@ -324,7 +337,7 @@ onMounted(async () => {
     { immediate: true }
   );
 
-  watch(() => props.selectedDate, addAllRegions);
+  watch(() => props.selectedDate, createRegions);
   tick();
 });
 </script>
