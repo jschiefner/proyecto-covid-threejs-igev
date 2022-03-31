@@ -21,6 +21,18 @@ const tooltipString = ref("");
 const cameraTargetPosition = new THREE.Vector3(370, 370, -15);
 const cameraInitialPosition = new THREE.Vector3(1000, 500, 2000);
 const regionMeshData = {};
+// structure of this variable:
+//   ATT2: [
+//     {
+//       mesh: mesh1,
+//       shape: [{x,y}, {x,y}, ...],
+//     },
+//     {
+//       mesh: mesh2,
+//       shape: [{x,y}, {x,y}, ...],
+//     },
+//   ],
+// };
 
 const offset = 700; // for the globes offset to the right, TODO: change based on window width
 let rootObject = new THREE.Object3D(); // root object for the extruded elements
@@ -95,8 +107,6 @@ mapMaterial.wrapT = THREE.RepeatWrapping;
 let material = new THREE.MeshPhongMaterial({
   map: mapMaterial,
   color: 0xb0c8e8,
-  // opacity: 0.1,
-  // transparent: true,
 });
 let mesh = new THREE.Mesh(geometry, material);
 mesh.layers.set(worldLayer);
@@ -194,18 +204,6 @@ function createRegions() {
       })
     });
 
-    // desired output = {
-    //   ATT2: [
-    //     {
-    //       mesh: mesh1,
-    //       shape: [{x,y}, {x,y}, ...],
-    //     },
-    //     {
-    //       mesh: mesh2,
-    //       shape: [{x,y}, {x,y}, ...],
-    //     },
-    //   ],
-    // };
     regionMeshData[regionNutsCode] = output;
   });
 }
@@ -214,7 +212,7 @@ function updateRegions(animationTime) {
   for (const nuts in regionMeshData) {
     regionMeshData[nuts].forEach(({mesh, shape}) => {
       const covidDataWeek = props.covidData[props.selectedDate.toJSON()][nuts];
-      const color = visualization.colorByIncidence(covidDataWeek.incidence);
+      const color = new THREE.Color(visualization.colorByIncidence(covidDataWeek.incidence));
       const extrusion = visualization.extrusion(covidDataWeek.incidence)
       const shapeGeometry = createShapeGeometry(shape, extrusion);
 
@@ -329,7 +327,7 @@ onMounted(async () => {
         intersectedObject.currentHex =
           intersectedObject.material.color.getHex();
         // set a new color for closest object
-        intersectedObject.material.color.setHex(0x00cc00);
+        intersectedObject.material.color.setHex(0x6dc1fd);
 
         // update text, if it has a "name" field. This will contain the nuts code of the intersected region
         const name = intersects[0].object.name;

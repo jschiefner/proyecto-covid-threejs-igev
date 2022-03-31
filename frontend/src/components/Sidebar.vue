@@ -10,6 +10,7 @@ import "vue-datepicker-next/index.css";
 import BarChart from "./BarChart.vue";
 import { getFlagUrl } from "../helpers/flags.js";
 import VCenter from "./VCenter.vue"
+import visualization from "../helpers/visualization.js";
 
 const chartDisplayWeeks = ref(5);
 const casesChartDivide = ref(false);
@@ -86,15 +87,18 @@ const chartDataIncidence = computed({
 
     const { accessors, labels } = extractAccessorsAndLabels();
 
-    const data = accessors.map((date) => {
+    const data = [];
+    const colors = [];
+    accessors.forEach((date) => {
       let element = props.covidData[date][props.selectedNutsCode];
-      return parseFloat(element.incidence);
+      data.push(parseFloat(element.incidence));
+      colors.push(visualization.colorByIncidence(element.incidence))
     });
 
     // return labels and data
     return {
       labels,
-      datasets: [{ data, backgroundColor: "#660000" }],
+      datasets: [{ data, backgroundColor: colors }],
     };
   },
 });
@@ -109,18 +113,18 @@ const chartDataNewCases = computed({
 
     const { accessors, labels } = extractAccessorsAndLabels();
 
-    const data = accessors.map((date) => {
+    const data = [];
+    const colors = [];
+    accessors.forEach((date) => {
       let element = props.covidData[date][props.selectedNutsCode];
-      if (casesChartDivide.value) {
-        return parseFloat(element.count) / parseFloat(element.population);
-      } else {
-        return parseFloat(element.count);
-      }
+      let proportion = parseFloat(element.count) / parseFloat(element.population)
+      data.push(casesChartDivide.value ? proportion : parseFloat(element.count));
+      colors.push(visualization.colorByProportion(proportion))
     });
 
     return {
       labels,
-      datasets: [{ data, backgroundColor: "#006600" }],
+      datasets: [{ data, backgroundColor: colors }],
     };
   },
 });
