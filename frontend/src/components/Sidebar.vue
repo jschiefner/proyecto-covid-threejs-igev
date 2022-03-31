@@ -238,7 +238,7 @@ onMounted(() => {
             <div class="level-item has-text-centered">
               <div>
                 <p class="heading">
-                  <i class="fa fa-people-group"></i> Population
+                  <i class="fa fa-people-group"></i> Población
                 </p>
                 <p class="title">
                   {{ numberWithDots(currentCovidElement.population) }}
@@ -288,7 +288,7 @@ onMounted(() => {
             />
           </div>
           <div class="column">
-            <label class="label">Dividir casos por población</label>
+            <label class="label">Mostrar proporción</label>
           </div>
           <div class="column">
             <div class="field">

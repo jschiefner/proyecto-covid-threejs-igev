@@ -214,7 +214,7 @@ function updateRegions(animationTime) {
   for (const nuts in regionMeshData) {
     regionMeshData[nuts].forEach(({mesh, shape}) => {
       const covidDataWeek = props.covidData[props.selectedDate.toJSON()][nuts];
-      const color = visualization.color(covidDataWeek.incidence);
+      const color = visualization.colorByIncidence(covidDataWeek.incidence);
       const extrusion = visualization.extrusion(covidDataWeek.incidence)
       const shapeGeometry = createShapeGeometry(shape, extrusion);
 
