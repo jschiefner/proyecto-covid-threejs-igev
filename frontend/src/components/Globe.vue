@@ -3,6 +3,7 @@ import { nextTick, onMounted, watch } from "@vue/runtime-core";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { VueElement, ref } from "vue";
+import * as TWEEN from "@tweenjs/tween.js";
 
 const props = defineProps({
   geoData: Object,
@@ -15,7 +16,9 @@ const emit = defineEmits(["regionSelected"]);
 
 // Create globally usable variables for data
 let tooltipElement;
-let tooltipString = ref("");
+const tooltipString = ref("");
+const cameraTargetPosition = new THREE.Vector3(370, 370, -15);
+const cameraInitialPosition = new THREE.Vector3(1000, 500, 2000);
 
 const offset = 700; // for the globes offset to the right, TODO: change based on window width
 let rootObject = new THREE.Object3D(); // root object for the extruded elements
@@ -39,7 +42,11 @@ var camera = new THREE.PerspectiveCamera(
   1,
   10000
 );
-camera.position.set(370, 370, -15);
+camera.position.set(
+  cameraInitialPosition.x,
+  cameraInitialPosition.y,
+  cameraInitialPosition.z
+);
 
 // Prepare Raycaster
 let intersectedObject;
@@ -50,9 +57,9 @@ let mouse = new THREE.Vector2(-1, -1); // vector to store mouse position
 // Create and init lights
 let worldLight = new THREE.DirectionalLight(0xffffff);
 worldLight.position.set(
-  camera.position.x,
-  camera.position.y,
-  +camera.position.z
+  cameraTargetPosition.x,
+  cameraTargetPosition.y,
+  cameraTargetPosition.z
 );
 worldLight.layers.set(worldLayer, objectLayer);
 scene.add(worldLight);
@@ -301,10 +308,23 @@ onMounted(async () => {
     }
 
     controls.update(); // let the globe keep spinning if user lets go of the mouse
+    TWEEN.update();
     window.requestAnimationFrame(tick); // request a new animation frame
   };
 
-  watch(() => props.selectedDate, addAllRegions, { immediate: true });
+  watch(
+    props.covidData,
+    () => {
+      addAllRegions();
+      new TWEEN.Tween(camera.position)
+        .to(cameraTargetPosition, 3000)
+        .easing(TWEEN.Easing.Cubic.Out)
+        .start();
+    },
+    { immediate: true }
+  );
+
+  watch(() => props.selectedDate, addAllRegions);
   tick();
 });
 </script>
