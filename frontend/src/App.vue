@@ -1,11 +1,9 @@
 <script setup>
-import { loadJsonFile } from "./helpers/fileLoader";
-
 import Globe from "./components/Globe.vue";
 import Sidebar from "./components/Sidebar.vue";
 import VCenter from "./components/VCenter.vue";
 import Spinner from "./components/Spinner.vue";
-import load from "./helpers/textures.js";
+import load from "./helpers/loader.js";
 import { ref } from "vue";
 import { computed } from "@vue/reactivity";
 import moment from "moment";
@@ -17,33 +15,31 @@ moment.updateLocale("en", {
     doy: 4, // First week of year must contain 4 January (7 + 1 - 4)
   },
 });
+
+const globeTextureFile = "../src/assets/8081_earthmap10k.jpeg";
+const skyboxTextureFile = '../src/assets/skybox/corona';
 const geoDataFile = "../src/assets/NUTS_RG_60M_2021_4326.geojson";
 const covidDataFile = "../src/assets/sample-covid-data-2022-13.json";
 const initialDate = "2022-03-14T00:00:00.000Z"; // TODO: determine last date somehow?
-const artificialLoadingTime = 0;
 
-const loading = ref(true);
 const geoData = ref({});
 const covidData = ref({});
 const textures = ref({});
 const selectedNutsCode = ref(null);
 const selectedDate = ref(null);
 
+// Wait until all data is loaded
 Promise.all([
-  loadJsonFile(geoDataFile),
-  loadJsonFile(covidDataFile),
-  load.globeTexture(),
-  load.skyboxTexture()
+  load.jsonFile(geoDataFile),
+  load.jsonFile(covidDataFile),
+  load.globeTexture(globeTextureFile),
+  load.skyboxTexture(skyboxTextureFile)
 ]).then(([loadedGeoData, loadedCovidData, loadedGlobeTexture, loadedSkyboxTexture]) => {
   geoData.value = loadedGeoData;
   covidData.value = loadedCovidData;
   textures.value.globeTexture = loadedGlobeTexture;
   textures.value.skyboxTexture = loadedSkyboxTexture;
   selectedDate.value = new Date(initialDate);
-  // give three.js time to draw the globe
-  setTimeout(() => {
-    loading.value = false;
-  }, artificialLoadingTime);
 });
 
 const search = function () {
@@ -108,7 +104,7 @@ const jumpCurrentWeek = function () {
       />
     </div>
     <transition name="fade">
-      <div v-if="loading" class="loading-container">
+      <div v-if="!dataLoaded" class="loading-container">
         <VCenter>
           <Spinner />
           <br />
