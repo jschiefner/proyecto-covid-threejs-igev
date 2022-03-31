@@ -4,6 +4,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { VueElement, ref } from "vue";
 import * as TWEEN from "@tweenjs/tween.js";
+import visualization from "../helpers/visualization.js";
 
 const props = defineProps({
   geoData: Object,
@@ -166,14 +167,14 @@ function createRegions() {
 
     shapePointsArray.forEach((shapePoints) => {
       // with one shapePoints array [{x,y}, {x,y}, ...] create a new mesh
-      let extrusion = 10; // ? adjust this value maybe? just an original extrusion from which can be animated
+      let extrusion = 1; // ? adjust this value maybe? just an original extrusion from which can be animated
 
       // TODO: implement this
       const shapeGeometry = createShapeGeometry(shapePoints, extrusion);
 
       // TODO: enough to do this once on the top probably (allthough not sure with the color since that needs to be different)
       const shapeMaterial = new THREE.MeshPhongMaterial({
-        color: 0x888888, // TODO: use color scheme
+        color: 0xffffff, // TODO: use color scheme
         side: THREE.DoubleSide,
       })
       const mesh = new THREE.Mesh(shapeGeometry, shapeMaterial);
@@ -193,23 +194,51 @@ function createRegions() {
       })
     });
 
+    // desired output = {
+    //   ATT2: [
+    //     {
+    //       mesh: mesh1,
+    //       shape: [{x,y}, {x,y}, ...],
+    //     },
+    //     {
+    //       mesh: mesh2,
+    //       shape: [{x,y}, {x,y}, ...],
+    //     },
+    //   ],
+    // };
     regionMeshData[regionNutsCode] = output;
   });
+}
 
-  console.log(regionMeshData)
+function updateRegions(animationTime) {
+  for (const nuts in regionMeshData) {
+    regionMeshData[nuts].forEach(({mesh, shape}) => {
+      const covidDataWeek = props.covidData[props.selectedDate.toJSON()][nuts];
+      const color = visualization.color(covidDataWeek.incidence);
+      const extrusion = visualization.extrusion(covidDataWeek.incidence)
+      const shapeGeometry = createShapeGeometry(shape, extrusion);
 
-  // desired output = {
-  //   ATT2: [
-  //     {
-  //       mesh: mesh1,
-  //       shape: [{x,y}, {x,y}, ...],
-  //     },
-  //     {
-  //       mesh: mesh2,
-  //       shape: [{x,y}, {x,y}, ...],
-  //     },
-  //   ],
-  // };
+      // animate color
+      new TWEEN.Tween(mesh.material.color)
+        .to(color, animationTime)
+        .easing(TWEEN.Easing.Quadratic.InOut)
+        .onUpdate(() => {
+          mesh.geometry.verticesNeedUpdate = true;
+        })
+        .start()
+
+      // animate vertices
+      mesh.geometry.vertices.forEach((vertex, index) => {
+        new TWEEN.Tween(vertex)
+          .to(shapeGeometry.vertices[index], animationTime)
+          .easing(TWEEN.Easing.Quadratic.InOut)
+          .onUpdate(() => {
+            mesh.geometry.verticesNeedUpdate = true;
+          })
+          .start()
+      })
+    });
+  }
 }
 
 onMounted(async () => {
@@ -328,16 +357,18 @@ onMounted(async () => {
   watch(
     props.covidData,
     () => {
+      const animationTime = 3000;
       createRegions();
+      updateRegions(animationTime * 1.3);
       new TWEEN.Tween(camera.position)
-        .to(cameraTargetPosition, 3000)
+        .to(cameraTargetPosition, animationTime)
         .easing(TWEEN.Easing.Cubic.Out)
         .start();
     },
     { immediate: true }
   );
 
-  watch(() => props.selectedDate, createRegions);
+  watch(() => props.selectedDate, () => updateRegions(300));
   tick();
 });
 </script>
