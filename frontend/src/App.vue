@@ -5,6 +5,7 @@ import Globe from "./components/Globe.vue";
 import Sidebar from "./components/Sidebar.vue";
 import VCenter from "./components/VCenter.vue";
 import Spinner from "./components/Spinner.vue";
+import load from "./helpers/textures.js";
 import { ref } from "vue";
 import { computed } from "@vue/reactivity";
 import moment from "moment";
@@ -19,25 +20,31 @@ moment.updateLocale("en", {
 const geoDataFile = "../src/assets/NUTS_RG_60M_2021_4326.geojson";
 const covidDataFile = "../src/assets/sample-covid-data-2022-13.json";
 const initialDate = "2022-03-14T00:00:00.000Z"; // TODO: determine last date somehow?
-const artificialLoadingTime = 3000;
+const artificialLoadingTime = 0;
 
 const loading = ref(true);
 const geoData = ref({});
 const covidData = ref({});
+const textures = ref({});
 const selectedNutsCode = ref(null);
 const selectedDate = ref(null);
 
-Promise.all([loadJsonFile(geoDataFile), loadJsonFile(covidDataFile)]).then(
-  ([loadedGeoData, loadedCovidData]) => {
-    geoData.value = loadedGeoData;
-    covidData.value = loadedCovidData;
-    selectedDate.value = new Date(initialDate);
-    // give three.js time to draw the globe
-    setTimeout(() => {
-      loading.value = false;
-    }, artificialLoadingTime);
-  }
-);
+Promise.all([
+  loadJsonFile(geoDataFile),
+  loadJsonFile(covidDataFile),
+  load.globeTexture(),
+  load.skyboxTexture()
+]).then(([loadedGeoData, loadedCovidData, loadedGlobeTexture, loadedSkyboxTexture]) => {
+  geoData.value = loadedGeoData;
+  covidData.value = loadedCovidData;
+  textures.value.globeTexture = loadedGlobeTexture;
+  textures.value.skyboxTexture = loadedSkyboxTexture;
+  selectedDate.value = new Date(initialDate);
+  // give three.js time to draw the globe
+  setTimeout(() => {
+    loading.value = false;
+  }, artificialLoadingTime);
+});
 
 const search = function () {
   // TODO: implement search
@@ -96,6 +103,7 @@ const jumpCurrentWeek = function () {
         :geo-data="geoData"
         :covid-data="covidData"
         :selected-date="selectedDate"
+        :textures="textures"
         @region-selected="regionSelected"
       />
     </div>

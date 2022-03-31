@@ -8,13 +8,12 @@ const props = defineProps({
   geoData: Object,
   covidData: Object,
   selectedDate: Date,
+  textures: Object,
 });
 
 const emit = defineEmits(["regionSelected"]);
 
-// Create loaders and globally usable variables for data
-const texLoader = new THREE.TextureLoader();
-
+// Create globally usable variables for data
 let tooltipElement;
 let tooltipString = ref("");
 
@@ -80,7 +79,7 @@ scene.add(ambientLight);
 let earthRadius = 300;
 let segments = 128;
 let rings = 128;
-let mapMaterial = texLoader.load("../src/assets/8081_earthmap10k.jpeg");
+let mapMaterial = props.textures.globeTexture;
 let geometry = new THREE.SphereGeometry(earthRadius, segments, rings);
 mapMaterial.wrapS = THREE.RepeatWrapping;
 mapMaterial.wrapT = THREE.RepeatWrapping;
@@ -93,30 +92,6 @@ let material = new THREE.MeshPhongMaterial({
 let mesh = new THREE.Mesh(geometry, material);
 mesh.layers.set(worldLayer);
 scene.add(mesh);
-
-// Skybox
-function createPathStrings(filename) {
-  const fileType = ".png";
-  const sides = ["ft", "bk", "up", "dn", "rt", "lf"];
-  const pathStings = sides.map((side) => {
-    return filename + "_" + side + fileType;
-  });
-  return pathStings;
-}
-
-function createMaterialArray(filename) {
-  const skyboxImagepaths = createPathStrings(filename);
-  const materialArray = skyboxImagepaths.map((image) => {
-    let texture = texLoader.load(image);
-    return new THREE.MeshBasicMaterial({
-      map: texture,
-      side: THREE.BackSide,
-      transparent: true,
-      opacity: 0.5,
-    });
-  });
-  return materialArray;
-}
 
 // Draw a single region
 function addRegion(shapePoints, covidDataWeek) {
@@ -238,9 +213,8 @@ onMounted(async () => {
   container.style.right = `${offset}px`;
 
   // Setup skybox
-  const materialArray = createMaterialArray("../src/assets/skybox/corona");
   const skyboxGeo = new THREE.BoxGeometry(10000, 10000, 10000);
-  const skybox = new THREE.Mesh(skyboxGeo, materialArray);
+  const skybox = new THREE.Mesh(skyboxGeo, props.textures.skyboxTexture);
   scene.add(skybox);
 
   // Setup tooltip
