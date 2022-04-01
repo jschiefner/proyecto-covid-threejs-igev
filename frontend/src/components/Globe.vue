@@ -298,7 +298,7 @@ const getHoveredIncidence = computed({
     if (covidDataWeek?.incidence) {
       return `Incidencia: ${parseInt(covidDataWeek.incidence)}`;
     } else {
-      return 'no disponible'
+      return 'Incidencia: no disponible'
     }
   },
 });
@@ -310,7 +310,7 @@ const getHoveredNewCases = computed({
     if (covidDataWeek?.count) {
       return `Nuevos casos: ${covidDataWeek.count} (${((covidDataWeek.count / covidDataWeek.population) * 100).toFixed(2)}%)`;
     } else {
-      return 'no disponible'
+      return 'Nuevos casos: no disponible'
     }
   },
 });

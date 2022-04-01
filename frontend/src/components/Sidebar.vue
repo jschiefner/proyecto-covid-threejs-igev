@@ -174,7 +174,6 @@ onMounted(() => {
   dateInput.classList.remove("mx-input");
 
   const datePicker = document.querySelector("div.mx-datepicker");
-  // datePicker.style.width = "150px";
 
   const typeaheadInput = document.querySelector("#typeahead_id");
   typeaheadInput.classList.add("input");

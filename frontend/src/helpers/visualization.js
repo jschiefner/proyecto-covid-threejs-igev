@@ -10,7 +10,7 @@ const mediumValue = 0.7;
 const bestHue = 138;
 const insulation = 0.8;
 
-const minExtrusion = 0.1;
+const minExtrusion = 3;
 
 const extrusion = function (incidence) {
   incidence = parseFloat(incidence)
