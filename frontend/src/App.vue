@@ -21,7 +21,7 @@ moment.updateLocale("en", {
 const globeTextureFile = "../src/assets/8081_earthmap10k.jpeg";
 const skyboxTextureFile = '../src/assets/skybox/corona';
 const geoDataFile = "../src/assets/NUTS_RG_60M_2021_4326.geojson";
-const covidDataFile = "../src/assets/sample-covid-data-2022-13.json";
+const covidDataFile = "../src/assets/sample-covid-data-2022-12.json";
 let firstDate;
 let lastDate;
 
