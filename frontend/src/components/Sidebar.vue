@@ -9,13 +9,17 @@ import DatePicker from "vue-datepicker-next";
 import "vue-datepicker-next/index.css";
 import BarChart from "./BarChart.vue";
 import { getFlagUrl } from "../helpers/flags.js";
-import VCenter from "./VCenter.vue"
+import VCenter from "./VCenter.vue";
 import visualization from "../helpers/visualization.js";
+import SimpleTypeahead from "vue3-simple-typeahead";
+import "vue3-simple-typeahead/dist/vue3-simple-typeahead.css";
+import { getRegionName, getRegionList } from "../helpers/regionNames.js";
 
 const chartDisplayWeeks = ref(5);
 const casesChartDivide = ref(false);
 
 const props = defineProps({
+  geoData: Object,
   covidData: Object,
   selectedNutsCode: String,
   selectedDate: Date,
@@ -92,7 +96,7 @@ const chartDataIncidence = computed({
     accessors.forEach((date) => {
       let element = props.covidData[date][props.selectedNutsCode];
       data.push(parseFloat(element.incidence));
-      colors.push(visualization.colorByIncidence(element.incidence))
+      colors.push(visualization.colorByIncidence(element.incidence));
     });
 
     // return labels and data
@@ -117,9 +121,12 @@ const chartDataNewCases = computed({
     const colors = [];
     accessors.forEach((date) => {
       let element = props.covidData[date][props.selectedNutsCode];
-      let proportion = parseFloat(element.count) / parseFloat(element.population)
-      data.push(casesChartDivide.value ? proportion : parseFloat(element.count));
-      colors.push(visualization.colorByProportion(proportion))
+      let proportion =
+        parseFloat(element.count) / parseFloat(element.population);
+      data.push(
+        casesChartDivide.value ? proportion : parseFloat(element.count)
+      );
+      colors.push(visualization.colorByProportion(proportion));
     });
 
     return {
@@ -144,28 +151,36 @@ onMounted(() => {
   dateInput.classList.remove("mx-input");
 
   const datePicker = document.querySelector("div.mx-datepicker");
-  datePicker.style.width = "150px";
+  // datePicker.style.width = "150px";
+
+  const typeaheadInput = document.querySelector("#typeahead_id");
+  typeaheadInput.classList.add("input");
 });
 </script>
 
 <template>
   <div id="menucontainer" class="container">
     <!-- Search section -->
-    <div class="columns is-vcentered is-centered">
-      <div class="column">
+    <div class="columns is-centered is-vcentered">
+      <div class="column is-narrow">
         <div class="field has-addons">
           <p class="control has-icons-left">
-            <input class="input" placeholder="Region" />
-            <span class="icon is-small is-left">
+            <SimpleTypeahead
+              id="typeahead_id"
+              placeholder="Buscar"
+              :items="getRegionList()"
+              :minInputLength="1"
+              @selectItem="this.$emit('search', $event)"
+              >
+            	<template #list-item-text="slot"><span v-html="slot.boldMatchText(slot.itemProjection(slot.item))" class="search-suggestion-text"></span></template>
+            </SimpleTypeahead>
+            <span class="icon is-small is-left search-span">
               <i class="fa-solid fa-magnifying-glass"></i>
             </span>
           </p>
-          <div class="control">
-            <a class="button is-info" @click="this.$emit('search')">Buscar</a>
-          </div>
         </div>
       </div>
-      <div class="column is-narrow">
+      <div class="column">
         <date-picker
           :value="selectedDate"
           @change="this.$emit('dateSelected', $event)"
@@ -175,7 +190,7 @@ onMounted(() => {
           :lang="{ formatLocale: { firstDayOfWeek: 1 } }"
         ></date-picker>
       </div>
-      <div class="column is-narrow">
+      <div class="column">
         <div class="field has-addons">
           <p class="control">
             <button class="button" @click="this.$emit('oneWeekBack')">
@@ -205,7 +220,7 @@ onMounted(() => {
         <div class="card-content">
           <div class="media">
             <div class="media-content">
-              <p class="title is-4">{{ currentCovidElement.region }}</p>
+              <p class="title is-4">{{ getRegionName(currentCovidElement.nuts) }}</p>
               <p class="subtitle is-6">{{ currentCovidElement.country }}</p>
             </div>
             <div class="media-right">
@@ -355,5 +370,11 @@ h6 {
   justify-content: center;
 }
 
+span.search-span {
+  color: black !important;
+}
 
+.search-suggestion-text {
+  color: black !important;
+}
 </style>

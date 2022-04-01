@@ -14,11 +14,14 @@
     "bulma-switch": "^2.0.4",
     "chart.js": "^3.0.0",
     "dat.gui": "^0.7.9",
+    "install": "^0.13.0",
     "moment": "^2.29.1",
+    "npm": "^8.5.5",
     "three": "^0.124.0",
     "vue": "^3.2.25",
     "vue-chartjs": "^4.0.3",
-    "vue-datepicker-next": "^1.0.2"
+    "vue-datepicker-next": "^1.0.2",
+    "vue3-simple-typeahead": "^1.0.5"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^2.2.0",

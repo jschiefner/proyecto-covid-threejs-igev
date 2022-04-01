@@ -2,9 +2,10 @@
 import { nextTick, onMounted, watch } from "@vue/runtime-core";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
-import { VueElement, ref } from "vue";
+import { VueElement, ref, defineExpose } from "vue";
 import * as TWEEN from "@tweenjs/tween.js";
 import visualization from "../helpers/visualization.js";
+import { getRegionName } from "../helpers/regionNames.js";
 
 const props = defineProps({
   geoData: Object,
@@ -272,11 +273,24 @@ function onNutsCodeSelected(newValue, oldValue) {
   }
 }
 
+const animateToRegion = function() {
+  const vertex = regionMeshData[props.selectedNutsCode][0].mesh.geometry.vertices[0];
+  const vertexVector = new THREE.Vector3(vertex.x, vertex.y, vertex.z);
+  const cameraDistance = camera.position.length();
+  vertexVector.multiplyScalar(cameraDistance / vertexVector.length());
+
+  new TWEEN.Tween(camera.position)
+    .to(vertexVector, 2000)
+    .easing(TWEEN.Easing.Cubic.Out)
+    .start();
+}
+defineExpose({animateToRegion})
+
 // TODO: prettify tooltip
 function updateTooltip() {
   const covidDataWeek =
     props.covidData[props.selectedDate.toJSON()][hoveredNutsCode];
-  tooltipString.value = `${covidDataWeek.region}: ${covidDataWeek.incidence}`;
+  tooltipString.value = `${getRegionName(covidDataWeek.nuts)}: ${covidDataWeek.incidence}`;
 }
 
 onMounted(async () => {

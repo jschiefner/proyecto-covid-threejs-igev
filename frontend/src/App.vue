@@ -4,9 +4,10 @@ import Sidebar from "./components/Sidebar.vue";
 import VCenter from "./components/VCenter.vue";
 import Spinner from "./components/Spinner.vue";
 import load from "./helpers/loader.js";
-import { ref } from "vue";
+import { nextTick, ref } from "vue";
 import { computed } from "@vue/reactivity";
 import moment from "moment";
+import { registerRegions, getNutsCode } from "./helpers/regionNames.js";
 
 // define moment locale and some constants
 moment.updateLocale("en", {
@@ -27,6 +28,7 @@ const covidData = ref({});
 const textures = ref({});
 const selectedNutsCode = ref(null);
 const selectedDate = ref(null);
+const globe = ref(null);
 
 // Wait until all data is loaded
 Promise.all([
@@ -39,15 +41,20 @@ Promise.all([
   covidData.value = loadedCovidData;
   textures.value.globeTexture = loadedGlobeTexture;
   textures.value.skyboxTexture = loadedSkyboxTexture;
+  registerRegions(geoData);
   selectedDate.value = new Date(initialDate);
 });
 
-const search = function () {
-  // TODO: implement search
+const search = async function (regionName) {
+  selectedNutsCode.value = getNutsCode(regionName);
+  await nextTick();
+  globe.value.animateToRegion();
 };
 
-const regionSelected = function (nuts) {
+const regionSelected = async function (nuts) {
   selectedNutsCode.value = nuts;
+  await nextTick();
+  document.querySelector("#typeahead_id").value = "";
 };
 
 const dataLoaded = computed(() => {
@@ -86,6 +93,7 @@ const jumpCurrentWeek = function () {
   <div>
     <div v-if="dataLoaded">
       <Sidebar
+        :geo-data="geoData"
         :covid-data="covidData"
         :selectedNutsCode="selectedNutsCode"
         :selected-date="selectedDate"
@@ -102,6 +110,7 @@ const jumpCurrentWeek = function () {
         :selected-nuts-code="selectedNutsCode"
         :textures="textures"
         @region-selected="regionSelected"
+        ref="globe"
       />
     </div>
     <transition name="fade">
