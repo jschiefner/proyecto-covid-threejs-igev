@@ -192,7 +192,7 @@ onMounted(() => {
               placeholder="Buscar"
               :items="getRegionList()"
               :minInputLength="1"
-              @selectItem="this.$emit('search', $event)"
+              @selectItem="emit('search', $event)"
               >
             	<template #list-item-text="slot"><span v-html="slot.boldMatchText(slot.itemProjection(slot.item))" class="search-suggestion-text"></span></template>
             </SimpleTypeahead>
@@ -205,7 +205,7 @@ onMounted(() => {
       <div class="column">
         <date-picker
           :value="selectedDate"
-          @change="this.$emit('dateSelected', $event)"
+          @change="emit('dateSelected', $event)"
           type="week"
           format="DD/MM/YYYY"
           :clearable="false"
@@ -216,12 +216,12 @@ onMounted(() => {
       <div class="column">
         <div class="field has-addons">
           <p class="control">
-            <button class="button" @click="this.$emit('oneWeekBack')">
+            <button class="button" @click="emit('oneWeekBack')">
               <i class="fas fa-angle-left"></i>
             </button>
           </p>
           <p class="control">
-            <button class="button" @click="this.$emit('jumpCurrentWeek')">
+            <button class="button" @click="emit('jumpCurrentWeek')">
               <span class="icon is-small">
                 <i class="fas fa-calendar-day"></i>
               </span>
@@ -229,7 +229,7 @@ onMounted(() => {
             </button>
           </p>
           <p class="control">
-            <button class="button" @click="this.$emit('oneWeekForward')">
+            <button class="button" @click="emit('oneWeekForward')">
               <i class="fas fa-angle-right"></i>
             </button>
           </p>
