@@ -8,12 +8,11 @@ import { onMounted, watch } from "vue";
 import DatePicker from "vue-datepicker-next";
 import "vue-datepicker-next/index.css";
 import BarChart from "./BarChart.vue";
-import { getFlagUrl } from "../helpers/flags.js";
 import VCenter from "./VCenter.vue";
 import visualization from "../helpers/visualization.js";
 import SimpleTypeahead from "vue3-simple-typeahead";
 import "vue3-simple-typeahead/dist/vue3-simple-typeahead.css";
-import { getRegionName, getRegionList } from "../helpers/regionNames.js";
+import { getRegionName, getCountryName, getRegionList, getFlagUrl } from "../helpers/regionNames.js";
 import Gradient from "./Gradient.vue";
 import { getFirstDate, getLastDate } from "../helpers/dates.js";
 
@@ -39,7 +38,7 @@ const emit = defineEmits([
 ]);
 
 function numberWithDots(x) {
-  if (!x) return "";
+  if (!x) return "no disponible";
   return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 }
 
@@ -108,14 +107,13 @@ const chartDataIncidence = computed({
     const data = [];
     const colors = [];
     accessors.forEach((date) => {
-      let covidDataForDate = props.covidData[date]
-      if (!covidDataForDate) {
-        data.push(null)
-        colors.push(null)
-      } else {
-        let element = covidDataForDate[props.selectedNutsCode];
+      const element = props.covidData[date]?.[props.selectedNutsCode];
+      if (element?.incidence) {
         data.push(parseFloat(element.incidence));
         colors.push(visualization.colorByIncidence(element.incidence));
+      } else {
+        data.push(null)
+        colors.push(null)
       }
     });
 
@@ -140,15 +138,14 @@ const chartDataNewCases = computed({
     const data = [];
     const colors = [];
     accessors.forEach((date) => {
-      let covidDataForDate = props.covidData[date];
-      if (!covidDataForDate) {
-        data.push(null);
-        colors.push(null);
-      } else {
-        let element = covidDataForDate[props.selectedNutsCode];
-        let proportion = parseFloat(element.count) / parseFloat(element.population);
+      const element = props.covidData[date]?.[props.selectedNutsCode];
+      if (element) {
+        const proportion = parseFloat(element.count) / parseFloat(element.population);
         data.push(casesChartDivide.value ? proportion : parseFloat(element.count));
         colors.push(visualization.colorByProportion(proportion));
+      } else {
+        data.push(null);
+        colors.push(null);
       }
     });
 
@@ -247,13 +244,13 @@ onMounted(() => {
         <div class="card-content">
           <div class="media">
             <div class="media-content">
-              <p class="title is-4">{{ getRegionName(currentCovidElement?.nuts) }}</p>
-              <p class="subtitle is-6">{{ currentCovidElement?.country }}</p>
+              <p class="title is-4">{{ getRegionName(selectedNutsCode) }}</p>
+              <p class="subtitle is-6">{{ getCountryName(selectedNutsCode) }}</p>
             </div>
             <div class="media-right">
               <figure class="image is-48x48">
                 <img
-                  :src="getFlagUrl(currentCovidElement?.country)"
+                  :src="getFlagUrl(selectedNutsCode)"
                   alt="Placeholder image"
                 />
               </figure>

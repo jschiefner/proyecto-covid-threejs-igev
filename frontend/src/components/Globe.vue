@@ -24,6 +24,7 @@ const cameraTargetPosition = new THREE.Vector3(370, 370, -15);
 const cameraInitialPosition = new THREE.Vector3(1000, 500, 2000);
 const selectedColor = 0x0588e6;
 const hoverColor = 0x6dc1fd;
+const unavailableColor = "#333333";
 const regionMeshData = {};
 // structure of this variable:
 //   ATT2: [
@@ -219,10 +220,17 @@ function updateRegions(animationTime) {
   for (const nuts in regionMeshData) {
     regionMeshData[nuts].forEach(({ mesh, shape }) => {
       const covidDataWeek = props.covidData[props.selectedDate.toJSON()][nuts];
-      const color = new THREE.Color(
-        visualization.colorByIncidence(covidDataWeek.incidence)
-      );
-      const extrusion = visualization.extrusion(covidDataWeek.incidence);
+      let color;
+      let extrusion;
+      if (covidDataWeek?.incidence) {
+        color = new THREE.Color(
+          visualization.colorByIncidence(covidDataWeek.incidence)
+        );
+        extrusion = visualization.extrusion(covidDataWeek.incidence);
+      } else {
+        color = new THREE.Color(unavailableColor);
+        extrusion = visualization.extrusion(100);
+      }
       const shapeGeometry = createShapeGeometry(shape, extrusion);
 
       // animate color if necessary
@@ -250,31 +258,29 @@ function updateRegions(animationTime) {
   }
 }
 
-function onNutsCodeSelected(newValue, oldValue) {
-  if (oldValue) {
-    // reset color on previously selected mesh
-    const covidDataWeek =
-      props.covidData[props.selectedDate.toJSON()][oldValue];
-    const color = new THREE.Color(
-      visualization.colorByIncidence(covidDataWeek.incidence)
+function setRegionColor(nuts, color) {
+  if (!color) {
+    const covidDataWeek = props.covidData[props.selectedDate.toJSON()][nuts];
+    color = new THREE.Color(
+      covidDataWeek?.incidence
+        ? visualization.colorByIncidence(covidDataWeek.incidence)
+        : unavailableColor
     );
-    const selectedRegion = regionMeshData[oldValue];
-    selectedRegion.forEach(({ mesh, shape }) => {
-      mesh.material.color.set(color);
-    });
   }
-
-  if (newValue) {
-    // set color on newly selected mesh
-    const selectedRegion = regionMeshData[newValue];
-    selectedRegion.forEach(({ mesh, shape }) => {
-      mesh.material.color.setHex(selectedColor);
-    });
-  }
+  const selectedRegion = regionMeshData[nuts];
+  selectedRegion.forEach(({ mesh }) => {
+    mesh.material.color.set(color);
+  });
 }
 
-const animateToRegion = function() {
-  const vertex = regionMeshData[props.selectedNutsCode][0].mesh.geometry.vertices[0];
+function onNutsCodeSelected(newValue, oldValue) {
+  if (oldValue) setRegionColor(oldValue);
+  if (newValue) setRegionColor(newValue, selectedColor);
+}
+
+const animateToRegion = function () {
+  const vertex =
+    regionMeshData[props.selectedNutsCode][0].mesh.geometry.vertices[0];
   const vertexVector = new THREE.Vector3(vertex.x, vertex.y, vertex.z);
   const cameraDistance = camera.position.length();
   vertexVector.multiplyScalar(cameraDistance / vertexVector.length());
@@ -283,14 +289,15 @@ const animateToRegion = function() {
     .to(vertexVector, 2000)
     .easing(TWEEN.Easing.Cubic.Out)
     .start();
-}
-defineExpose({animateToRegion})
+};
+defineExpose({ animateToRegion });
 
 // TODO: prettify tooltip
 function updateTooltip() {
   const covidDataWeek =
     props.covidData[props.selectedDate.toJSON()][hoveredNutsCode];
-  tooltipString.value = `${getRegionName(covidDataWeek.nuts)}: ${covidDataWeek.incidence}`;
+  const incidence = covidDataWeek?.incidence ? parseInt(covidDataWeek.incidence) : "no disponible";
+  tooltipString.value = `${getRegionName(hoveredNutsCode)}: ${incidence}`;
 }
 
 onMounted(async () => {
@@ -352,19 +359,6 @@ onMounted(async () => {
     },
     false
   );
-
-  function setRegionColor(nuts, color) {
-    if (!color) {
-      const covidDataWeek = props.covidData[props.selectedDate.toJSON()][nuts];
-      color = new THREE.Color(
-        visualization.colorByIncidence(covidDataWeek.incidence)
-      );
-    }
-    const selectedRegion = regionMeshData[nuts];
-    selectedRegion.forEach(({ mesh }) => {
-      mesh.material.color.set(color);
-    });
-  }
 
   const tick = () => {
     renderer.autoClear = true;

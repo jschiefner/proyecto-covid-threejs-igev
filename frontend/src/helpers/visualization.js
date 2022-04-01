@@ -10,9 +10,12 @@ const mediumValue = 0.7;
 const bestHue = 138;
 const insulation = 0.8;
 
+const minExtrusion = 0.1;
+
 const extrusion = function (incidence) {
   incidence = parseFloat(incidence)
-  return incidence / mediumIncidence * 5
+  const extrusion = incidence / mediumIncidence * 5
+  return extrusion < minExtrusion ? minExtrusion : extrusion
 }
 
 function HSVtoRGB(h, s, v) {

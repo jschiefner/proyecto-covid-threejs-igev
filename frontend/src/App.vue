@@ -45,7 +45,7 @@ Promise.all([
   textures.value.skyboxTexture = loadedSkyboxTexture;
   firstDate = getFirstDate(covidData);
   lastDate = getLastDate(covidData);
-  registerRegions(geoData);
+  registerRegions(geoData, covidData);
   selectedDate.value = new Date(lastDate);
 });
 
