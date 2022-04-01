@@ -1,6 +1,6 @@
 import { Color } from "three";
 
-const mediumIncidence = 4000;
+const mediumIncidence = 2500;
 const maxIncidence = 10000;
 
 const mediumProportion = 0.03;
