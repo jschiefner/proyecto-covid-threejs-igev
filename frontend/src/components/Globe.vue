@@ -2,7 +2,7 @@
 import { computed, nextTick, onMounted, watch } from "@vue/runtime-core";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
-import { VueElement, ref, defineExpose } from "vue";
+import { VueElement, ref } from "vue";
 import * as TWEEN from "@tweenjs/tween.js";
 import visualization from "../helpers/visualization.js";
 import { getRegionName, getCountryName, getFlagUrl } from "../helpers/regionNames.js";
