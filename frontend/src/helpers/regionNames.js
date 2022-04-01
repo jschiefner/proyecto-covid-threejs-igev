@@ -284,9 +284,10 @@ const getRegionList = function () {
   return Object.values(regions).map(region => region.name);
 }
 
-const getFlagUrl = function(nuts) {
+const getFlagUrl = function(nuts, small = false) {
+  if (!nuts) return null;
   const short = countries[regions[nuts].country];
-  return `https://flagcdn.com/w160/${short}.png`;
+  return `https://flagcdn.com/${small ? 'w20' : 'w160'}/${short}.png`;
 }
 
 export {

@@ -1,11 +1,11 @@
 <script setup>
-import { nextTick, onMounted, watch } from "@vue/runtime-core";
+import { computed, nextTick, onMounted, watch } from "@vue/runtime-core";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { VueElement, ref, defineExpose } from "vue";
 import * as TWEEN from "@tweenjs/tween.js";
 import visualization from "../helpers/visualization.js";
-import { getRegionName } from "../helpers/regionNames.js";
+import { getRegionName, getCountryName, getFlagUrl } from "../helpers/regionNames.js";
 
 const props = defineProps({
   geoData: Object,
@@ -19,7 +19,6 @@ const emit = defineEmits(["regionSelected"]);
 
 // Create globally usable variables for data
 let tooltipElement;
-const tooltipString = ref("");
 const cameraTargetPosition = new THREE.Vector3(370, 370, -15);
 const cameraInitialPosition = new THREE.Vector3(1000, 500, 2000);
 const selectedColor = 0x0588e6;
@@ -71,7 +70,7 @@ camera.position.set(
 var rayCaster = new THREE.Raycaster();
 rayCaster.layers.set(objectLayer);
 let mouse = new THREE.Vector2(-1, -1); // vector to store mouse position
-let hoveredNutsCode = null;
+let hoveredNutsCode = ref(null);
 
 // Create and init lights
 let worldLight = new THREE.DirectionalLight(0xffffff);
@@ -292,13 +291,29 @@ const animateToRegion = function () {
 };
 defineExpose({ animateToRegion });
 
-// TODO: prettify tooltip
-function updateTooltip() {
-  const covidDataWeek =
-    props.covidData[props.selectedDate.toJSON()][hoveredNutsCode];
-  const incidence = covidDataWeek?.incidence ? parseInt(covidDataWeek.incidence) : "no disponible";
-  tooltipString.value = `${getRegionName(hoveredNutsCode)}: ${incidence}`;
-}
+const getHoveredIncidence = computed({
+  get() {
+    const covidDataWeek =
+      props.covidData[props.selectedDate.toJSON()][hoveredNutsCode.value];
+    if (covidDataWeek?.incidence) {
+      return `Incidencia: ${parseInt(covidDataWeek.incidence)}`;
+    } else {
+      return 'no disponible'
+    }
+  },
+});
+
+const getHoveredNewCases = computed({
+  get() {
+    const covidDataWeek =
+      props.covidData[props.selectedDate.toJSON()][hoveredNutsCode.value];
+    if (covidDataWeek?.count) {
+      return `Nuevos casos: ${covidDataWeek.count} (${((covidDataWeek.count / covidDataWeek.population) * 100).toFixed(2)}%)`;
+    } else {
+      return 'no disponible'
+    }
+  },
+});
 
 onMounted(async () => {
   const canvas = document.querySelector(".webgl");
@@ -355,7 +370,7 @@ onMounted(async () => {
   canvas.addEventListener(
     "click",
     () => {
-      emit("regionSelected", hoveredNutsCode);
+      emit("regionSelected", hoveredNutsCode.value);
     },
     false
   );
@@ -375,18 +390,18 @@ onMounted(async () => {
 
     if (intersects.length > 0) {
       // found an intersecting object
-      if (intersects[0].object.name != hoveredNutsCode) {
+      if (intersects[0].object.name != hoveredNutsCode.value) {
         // if the closest object intersected is not the currently stored intersection object
         tooltipElement.classList.remove("hidden");
 
         // restore previous intersection object (if it exists) to its original color
-        if (hoveredNutsCode && hoveredNutsCode != props.selectedNutsCode) {
-          setRegionColor(hoveredNutsCode);
+        if (hoveredNutsCode.value && hoveredNutsCode.value != props.selectedNutsCode) {
+          setRegionColor(hoveredNutsCode.value);
         }
 
         // store reference to closest object as current intersection object
-        hoveredNutsCode = intersects[0].object.name;
-        setRegionColor(hoveredNutsCode, hoverColor);
+        hoveredNutsCode.value = intersects[0].object.name;
+        setRegionColor(hoveredNutsCode.value, hoverColor);
 
         if (
           props.selectedNutsCode &&
@@ -394,21 +409,18 @@ onMounted(async () => {
         ) {
           setRegionColor(props.selectedNutsCode, selectedColor);
         }
-
-        // update tooltip
-        updateTooltip();
       } // else: it is the same object that is already intersected, so dont do anything
     } else {
       // restore previous intersection object (if it exists) to its original color
-      if (hoveredNutsCode) {
-        setRegionColor(hoveredNutsCode);
+      if (hoveredNutsCode.value) {
+        setRegionColor(hoveredNutsCode.value);
       }
       if (props.selectedNutsCode) {
         setRegionColor(props.selectedNutsCode, selectedColor);
       }
 
       // remove previous intersection object reference
-      hoveredNutsCode = null;
+      hoveredNutsCode.value = null;
       tooltipElement.classList.add("hidden");
     }
 
@@ -443,7 +455,16 @@ onMounted(async () => {
 <template>
   <div id="container">
     <canvas class="webgl"></canvas>
-    <div id="tooltip" class="hidden">{{ tooltipString }}</div>
+    <div id="tooltip" class="box hidden">
+      <h5 class="title is-5">{{ hoveredNutsCode ? getRegionName(hoveredNutsCode) : null }}</h5>
+      <div class="subtitle">
+          <img :src="getFlagUrl(hoveredNutsCode, true)" class="vertical-align tooltip-flag-image"/>
+          <span class="vertical-align">{{ hoveredNutsCode ? getCountryName(hoveredNutsCode) : null }}</span>
+      </div>
+
+      <p>{{ getHoveredIncidence }}</p>
+      <p>{{ getHoveredNewCases }}</p>
+    </div>
   </div>
 </template>
 
@@ -465,12 +486,24 @@ canvas {
 }
 div#tooltip {
   position: absolute;
-  top: 0;
-  left: 0;
   background: white;
-  border: 3px solid black;
+  padding: 0.5rem;
+  width: 16rem;
 }
+
+#tooltip .subtitle {
+  font-size: 0.8rem;
+}
+
 .hidden {
   display: none;
+}
+
+img.tooltip-flag-image {
+  margin-right: 0.3rem;
+}
+
+.vertical-align {
+  vertical-align: middle;
 }
 </style>
