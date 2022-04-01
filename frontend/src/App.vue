@@ -8,6 +8,7 @@ import { nextTick, ref } from "vue";
 import { computed } from "@vue/reactivity";
 import moment from "moment";
 import { registerRegions, getNutsCode } from "./helpers/regionNames.js";
+import { getFirstDate, getLastDate } from "./helpers/dates.js";
 
 // define moment locale and some constants
 moment.updateLocale("en", {
@@ -21,7 +22,8 @@ const globeTextureFile = "../src/assets/8081_earthmap10k.jpeg";
 const skyboxTextureFile = '../src/assets/skybox/corona';
 const geoDataFile = "../src/assets/NUTS_RG_60M_2021_4326.geojson";
 const covidDataFile = "../src/assets/sample-covid-data-2022-13.json";
-const initialDate = "2022-03-14T00:00:00.000Z"; // TODO: determine last date somehow?
+let firstDate;
+let lastDate;
 
 const geoData = ref({});
 const covidData = ref({});
@@ -41,8 +43,10 @@ Promise.all([
   covidData.value = loadedCovidData;
   textures.value.globeTexture = loadedGlobeTexture;
   textures.value.skyboxTexture = loadedSkyboxTexture;
+  firstDate = getFirstDate(covidData);
+  lastDate = getLastDate(covidData);
   registerRegions(geoData);
-  selectedDate.value = new Date(initialDate);
+  selectedDate.value = new Date(lastDate);
 });
 
 const search = async function (regionName) {
@@ -63,10 +67,15 @@ const dataLoaded = computed(() => {
 
 const setSelectedDate = function (date) {
   let momentDate = date._isAMomentObject ? date : moment(date);
-  momentDate.utc(true);
   momentDate.startOf("week");
-  if (momentDate.isDST()) momentDate.add(1, "h");
-  selectedDate.value = momentDate.toDate();
+  momentDate.utc(true);
+  if (momentDate > moment(lastDate)) {
+    selectedDate.value = moment(lastDate).toDate();
+  } else if (momentDate < moment(firstDate)) {
+    selectedDate.value = moment(firstDate).toDate();
+  } else {
+    selectedDate.value = momentDate.toDate();
+  }
 };
 
 const oneWeekBack = function () {

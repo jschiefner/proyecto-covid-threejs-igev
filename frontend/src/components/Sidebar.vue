@@ -15,6 +15,10 @@ import SimpleTypeahead from "vue3-simple-typeahead";
 import "vue3-simple-typeahead/dist/vue3-simple-typeahead.css";
 import { getRegionName, getRegionList } from "../helpers/regionNames.js";
 import Gradient from "./Gradient.vue";
+import { getFirstDate, getLastDate } from "../helpers/dates.js";
+
+let firstDate;
+let lastDate;
 
 const chartDisplayWeeks = ref(14);
 const casesChartDivide = ref(false);
@@ -35,6 +39,7 @@ const emit = defineEmits([
 ]);
 
 function numberWithDots(x) {
+  if (!x) return "";
   return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 }
 
@@ -57,24 +62,32 @@ const isRegionSelected = computed({
   },
 });
 
+const disabledDates = function(date, currentValue) {
+  return date < firstDate || date > moment(lastDate).add(6, "days").toDate();
+}
+
 const currentCovidElement = computed({
   get() {
     if (!isRegionSelected.value) return null;
 
-    return props.covidData[props.selectedDate.toJSON()][props.selectedNutsCode];
+    let covidWeekData = props.covidData[props.selectedDate.toJSON()]
+    if (!covidWeekData) return undefined;
+    return covidWeekData[props.selectedNutsCode];
   },
 });
 
 const extractAccessorsAndLabels = function () {
   const accessors = [];
   const labels = [];
-  const referenceDate = moment(props.selectedDate).subtract(
+  let date = moment(props.selectedDate).subtract(
     chartDisplayWeeks.value,
     "weeks"
   );
+  let isDST = date.isDST();
   for (let i = 0; i < chartDisplayWeeks.value; i++) {
-    const date = referenceDate.add(1, "weeks");
-    if (date.isDST()) date.add(1, "hour");
+    date.add(1, "weeks");
+    date = date.startOf("week");
+    date.utc(true);
     accessors.push(date.toJSON());
     labels.push(date.format("DD/MM/YYYY"));
   }
@@ -95,9 +108,15 @@ const chartDataIncidence = computed({
     const data = [];
     const colors = [];
     accessors.forEach((date) => {
-      let element = props.covidData[date][props.selectedNutsCode];
-      data.push(parseFloat(element.incidence));
-      colors.push(visualization.colorByIncidence(element.incidence));
+      let covidDataForDate = props.covidData[date]
+      if (!covidDataForDate) {
+        data.push(null)
+        colors.push(null)
+      } else {
+        let element = covidDataForDate[props.selectedNutsCode];
+        data.push(parseFloat(element.incidence));
+        colors.push(visualization.colorByIncidence(element.incidence));
+      }
     });
 
     // return labels and data
@@ -121,13 +140,16 @@ const chartDataNewCases = computed({
     const data = [];
     const colors = [];
     accessors.forEach((date) => {
-      let element = props.covidData[date][props.selectedNutsCode];
-      let proportion =
-        parseFloat(element.count) / parseFloat(element.population);
-      data.push(
-        casesChartDivide.value ? proportion : parseFloat(element.count)
-      );
-      colors.push(visualization.colorByProportion(proportion));
+      let covidDataForDate = props.covidData[date];
+      if (!covidDataForDate) {
+        data.push(null);
+        colors.push(null);
+      } else {
+        let element = covidDataForDate[props.selectedNutsCode];
+        let proportion = parseFloat(element.count) / parseFloat(element.population);
+        data.push(casesChartDivide.value ? proportion : parseFloat(element.count));
+        colors.push(visualization.colorByProportion(proportion));
+      }
     });
 
     return {
@@ -147,6 +169,9 @@ const checkboxChanged = function () {
 };
 
 onMounted(() => {
+  firstDate = new Date(getFirstDate(props.covidData));
+  lastDate = new Date(getLastDate(props.covidData));
+
   const dateInput = document.querySelector("input[name='date']");
   dateInput.classList.add("input");
   dateInput.classList.remove("mx-input");
@@ -189,6 +214,7 @@ onMounted(() => {
           format="DD/MM/YYYY"
           :clearable="false"
           :lang="{ formatLocale: { firstDayOfWeek: 1 } }"
+          :disabled-date="disabledDates"
         ></date-picker>
       </div>
       <div class="column">
@@ -221,13 +247,13 @@ onMounted(() => {
         <div class="card-content">
           <div class="media">
             <div class="media-content">
-              <p class="title is-4">{{ getRegionName(currentCovidElement.nuts) }}</p>
-              <p class="subtitle is-6">{{ currentCovidElement.country }}</p>
+              <p class="title is-4">{{ getRegionName(currentCovidElement?.nuts) }}</p>
+              <p class="subtitle is-6">{{ currentCovidElement?.country }}</p>
             </div>
             <div class="media-right">
               <figure class="image is-48x48">
                 <img
-                  :src="getFlagUrl(currentCovidElement.country)"
+                  :src="getFlagUrl(currentCovidElement?.country)"
                   alt="Placeholder image"
                 />
               </figure>
@@ -241,7 +267,7 @@ onMounted(() => {
                   <i class="fa fa-virus-covid-slash"></i> Incidencia
                 </p>
                 <p class="title">
-                  {{ numberWithDots(parseInt(currentCovidElement.incidence)) }}
+                  {{ numberWithDots(parseInt(currentCovidElement?.incidence)) }}
                 </p>
               </div>
             </div>
@@ -251,7 +277,7 @@ onMounted(() => {
                   <i class="fa fa-virus-covid"></i> Nuevos Casos
                 </p>
                 <p class="title">
-                  {{ numberWithDots(currentCovidElement.count) }}
+                  {{ numberWithDots(currentCovidElement?.count) }}
                 </p>
               </div>
             </div>
@@ -261,7 +287,7 @@ onMounted(() => {
                   <i class="fa fa-people-group"></i> Población
                 </p>
                 <p class="title">
-                  {{ numberWithDots(currentCovidElement.population) }}
+                  {{ numberWithDots(currentCovidElement?.population) }}
                 </p>
               </div>
             </div>
