@@ -1,6 +1,6 @@
 import { Color } from "three";
 
-const mediumIncidence = 2500;
+const mediumIncidence = 4000;
 const maxIncidence = 10000;
 
 const mediumProportion = 0.03;
@@ -49,7 +49,7 @@ function rgbToHex({r, g, b}) {
 const colorByIncidence = function (incidence) {
   incidence = parseFloat(incidence)
   let rgb;
-  if (incidence <= mediumIncidence) {
+  if (incidence < mediumIncidence) {
     const hue = ((1 - (incidence / mediumIncidence)) * bestHue) / 360
     rgb = HSVtoRGB(hue, insulation, mediumValue)
   } else {
@@ -78,4 +78,5 @@ export default {
   extrusion,
   colorByIncidence,
   colorByProportion,
+  maxIncidence,
 }

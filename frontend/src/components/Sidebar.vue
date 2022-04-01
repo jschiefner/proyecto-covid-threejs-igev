@@ -14,6 +14,7 @@ import visualization from "../helpers/visualization.js";
 import SimpleTypeahead from "vue3-simple-typeahead";
 import "vue3-simple-typeahead/dist/vue3-simple-typeahead.css";
 import { getRegionName, getRegionList } from "../helpers/regionNames.js";
+import Gradient from "./Gradient.vue";
 
 const chartDisplayWeeks = ref(14);
 const casesChartDivide = ref(false);
@@ -290,6 +291,12 @@ onMounted(() => {
       </div>
       <div class="box transparent-background">
         <div class="columns is-vcentered">
+          <div class="column is-one-fifth">Peligrosidad: </div>
+          <div class="column is-four-fifth gradient-column">
+            <Gradient />
+          </div>
+        </div>
+        <div class="columns is-vcentered">
           <div class="column">
             <label class="label"
               >Semanas mostradas: {{ chartDisplayWeeks }}</label
@@ -380,5 +387,9 @@ span.search-span {
 
 .box {
   margin-top: 1rem;
+}
+
+.gradient-column {
+  margin-bottom: -10px;
 }
 </style>
