@@ -15,7 +15,7 @@ import SimpleTypeahead from "vue3-simple-typeahead";
 import "vue3-simple-typeahead/dist/vue3-simple-typeahead.css";
 import { getRegionName, getRegionList } from "../helpers/regionNames.js";
 
-const chartDisplayWeeks = ref(5);
+const chartDisplayWeeks = ref(14);
 const casesChartDivide = ref(false);
 
 const props = defineProps({
@@ -340,7 +340,7 @@ div#menucontainer {
   z-index: 1;
   color: white;
   text-align: center;
-  padding: 2rem 1rem;
+  padding: 1rem;
 }
 
 h2,
@@ -376,5 +376,9 @@ span.search-span {
 
 .search-suggestion-text {
   color: black !important;
+}
+
+.box {
+  margin-top: 1rem;
 }
 </style>
