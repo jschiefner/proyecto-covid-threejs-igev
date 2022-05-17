@@ -1,3 +1,8 @@
+/*
+ * Get current data from: https://www.ecdc.europa.eu/en/publications-data/weekly-subnational-14-day-notification-rate-covid-19
+ * choose the JSON format
+ */
+
 const fs = require('fs')
 const { mainModule } = require('process')
 const models = require('./models')

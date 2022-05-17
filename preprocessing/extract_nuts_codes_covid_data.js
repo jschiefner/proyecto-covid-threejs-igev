@@ -1,3 +1,15 @@
+/*
+ * get current file from: https://ec.europa.eu/eurostat/web/gisco/geodata/reference-data/administrative-units-statistical-units/nuts
+ * Download options:
+ *
+ * Year: NUTS 2021
+ * File format: GeoJSON
+ * Geometry type: Polygons (RG)
+ * Scale: 60M (this is the smallest resolution which yields the best performance but other resolutions work too)
+ * Coordinate reference system:	EPSG: 4326 (also used by GPS)
+ *
+ */
+
 const fs = require('fs');
 
 var file = process.env.DATA_FILE
