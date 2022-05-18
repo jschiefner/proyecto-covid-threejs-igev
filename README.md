@@ -4,7 +4,7 @@ This Repo is for my **Project** in the class *Graphical User Interfaces and Virt
 
 <center>
     <a href="https://jschiefner.github.io/" target="_blank">
-        <img src="https://github.com/jschiefner/proyecto-covid-threejs-igev/blob/main/screenshot.png?raw=true">
+        <img src="https://github.com/jschiefner/proyecto-covid-threejs-igev/blob/main/screencast.gif?raw=true">
     </a>
 </center>
 
